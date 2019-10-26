@@ -1,0 +1,21 @@
+{
+  "name": "tiles",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "bundle": "browserify index.js -t [ babelify --presets [ @babel/preset-env ] ] -o bundle.js",
+    "bundle-watch": "watchify index.js -t [ babelify --presets [ @babel/preset-env ] ] -o bundle.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.6.2",
+    "@babel/preset-env": "^7.6.2",
+    "babelify": "^10.0.0"
+  },
+  "dependencies": {
+    "build-bundle": "^2.0.8",
+    "pixi.js": "^5.1.5"
+  }
+}

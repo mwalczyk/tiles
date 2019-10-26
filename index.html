@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+		<meta content="utf-8" http-equiv="encoding" />
+		<link rel="stylesheet" type="text/css" href="style.css" />
+	</head>
+
+	<body>
+		<div id="div_menu" class="menu">
+			<form name="form_w" class="menu_item menu_label">
+				<input
+					id="input_w"
+					type="range"
+					min="0.01"
+					max="0.99"
+					step="0.01"
+					value="0.25"
+					class="menu_item menu_slider"
+					oninput="input_label.value = `${input_w.value} Segment Width Ratio`"
+				/>
+				<output id="input_label">0.25 Segment Width Ratio</output>
+			</form>
+			<form name="form_tau" class="menu_item menu_label">
+				<input
+					id="input_tau"
+					type="range"
+					min="90"
+					max="135"
+					step="1"
+					value="120"
+					class="menu_item menu_slider"
+					oninput="input_label.value = `${input_tau.value} Degrees`"
+				/>
+				<output id="input_label">120 Degrees</output>
+			</form>
+			<form name="form_n" class="menu_item menu_label">
+				<input
+					id="input_n"
+					type="range"
+					min="3"
+					max="24"
+					step="1"
+					value="5"
+					class="menu_item menu_slider"
+					oninput="input_label.value = `${input_n.value} Sides`"
+				/>
+				<output id="input_label">5 Sides</output>
+			</form>
+		</div>
+		<script src="./bundle.js"></script>
+	</body>
+</html>
