@@ -30,18 +30,56 @@ export class Polygon {
 		return this._points;
 	}
 
+	get n() {
+		return this._points.length;
+	}
+
+	// See: https://www.calculatorsoup.com/calculators/geometry-plane/polygon.php
+
+	get inradius() {
+		
+	}
+
+	get sideLength() {
+
+	}
+
+	get circumRadius() {
+
+	}
+
+	get area() {
+
+	}
+
+	get perimeter() {
+
+	}
+
+	get interiorAngle() {
+		return (90.0 - 180.0 / this.n) * (Math.PI / 180.0);
+	}
+
+	get exteriorAngle() {
+		return (360 / this.n) * (Math.PI / 180.0);
+	}
+
+	get centroid() {
+
+	}
+
+	get perpendicularBisector() {
+
+	}
+
+	isDegenerate() {
+		return this._points.length < 3;
+	}
+
 	rotate(theta) {
 		let transform = Matrix.rotationZ(theta);
 		for (let i = 0; i < this._points.length; i++) {
 			this._points[i] = transform.multiply(this._points[i]);
 		}
 	}
-
-	area() {}
-
-	perimeter() {}
-
-	centroid() {}
-
-	perpendicularBisector(index) {}
 }

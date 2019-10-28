@@ -5,42 +5,74 @@ import { Matrix } from "./src/matrix";
 import { Point } from "./src/point";
 import { Polygon } from "./src/polygon";
 
+/*
+ *
+ * A class representing a single centered twist tile.
+ *
+ */
 export class Tile {
-	constructor(w = 0.25, tau = 1.25) {
-		if (w < 0.0 || w > 1.0) {
-			throw new Error("Invalid value for tile parameter `w`");
-		}
-
+	constructor(w, tau) {
+		// The segment width ratio along each of the tile polygon's edges
 		this._w = 0.25;
+
+		// The tilt angle of the twist
 		this._tau = tau;
+
+		// The number of sides on both the tile polygon and the central polygon
 		this._n = 5;
+
+		// The PIXI graphics container
 		this._graphics = new PIXI.Graphics();
 
+		// Where this tile will be centered within the app's canvas
 		this._center = new Point(
-			window.app.renderer.view.width * 0.5,
-			window.app.renderer.view.height * 0.5,
+			window.app.renderer.view.width * 0.25,
+			window.app.renderer.view.height * 0.25,
 			0.0
 		);
 
-		this._dirty = true;
+		this.update();
 	}
 
 	set w(w) {
-		if (w < 0.0 || w > 1.0) {
+		if (w <= 0.0 || w >= 1.0) {
 			throw new Error("Invalid value for tile parameter `w`");
 		}
 		this._w = w;
-		this._dirty = true;
 	}
 
 	set tau(tau) {
 		this._tau = tau;
-		this._dirty = true;
 	}
 
 	set n(n) {
+		if (n < 3) {
+			throw new Error("Tile cannot have less than 3 sides");
+		}
 		this._n = n;
-		this._dirty = true;
+	}
+
+	get w() {
+		return this._w;
+	}
+
+	get tau() {
+		return this._tau;
+	}
+
+	get n() {
+		return this._n;
+	}
+
+	get alphaSafe() {
+		return this._n <= 6
+			? this._tilePolygon.interiorAngle
+			: this._tilePolygon.exteriorAngle;
+	}
+
+	get alpha() {
+		// TODO: why is this negative?
+		return Math.abs(Math.atan(this.w * Math.tan(this.tau)));
 	}
 
 	get species() {
@@ -52,18 +84,24 @@ export class Tile {
 		return true;
 	}
 
-	update() {
-		this._tilePolygon = Polygon.regular(200.0, this._n);
+	recalculate() {
+		const radius =
+			Math.min(
+				window.app.renderer.view.width,
+				window.app.renderer.view.height
+			) * 0.2;
+
+		this._tilePolygon = Polygon.regular(radius, this._n);
 
 		// A rotation matrix to rotate each edge of the tile polygon by `tau`
-		let transform = Matrix.rotationZ(this._tau);
+		const transform = Matrix.rotationZ(this._tau);
 
 		this._edgePoints = []; // The points along the edges of the tile polygon from which the pleats will emanate
 		this._pleatLines = []; // The (infinite) lines that run along each of the pleats
 
 		for (let i = 0; i <= this._tilePolygon.points.length; i++) {
-			let iModA = (i + 0) % this._tilePolygon.points.length;
-			let iModB = (i + 1) % this._tilePolygon.points.length;
+			const iModA = (i + 0) % this._tilePolygon.points.length;
+			const iModB = (i + 1) % this._tilePolygon.points.length;
 
 			const pointA = this._tilePolygon.points[iModA];
 			const pointB = this._tilePolygon.points[iModB];
@@ -72,20 +110,32 @@ export class Tile {
 			const edgeLength = direction.length();
 			direction = direction.normalize();
 
-			let distanceC = ((1.0 - this._w) / 2.0) * edgeLength;
-			let distanceD = ((1.0 + this._w) / 2.0) * edgeLength;
+			const distanceC = ((1.0 - this._w) / 2.0) * edgeLength;
+			const distanceD = ((1.0 + this._w) / 2.0) * edgeLength;
 
-			let pointC = pointA.addDisplacement(direction.multiplyScalar(distanceC));
-			let pointD = pointA.addDisplacement(direction.multiplyScalar(distanceD));
+			// The two points that divide up this edge
+			const pointC = pointA.addDisplacement(
+				direction.multiplyScalar(distanceC)
+			);
+			const pointD = pointA.addDisplacement(
+				direction.multiplyScalar(distanceD)
+			);
 			this._edgePoints.push(pointC, pointD);
 
-			let pleatDirection = transform.multiply(direction);
+			// The direction of this edge's pleats (unit vector)
+			const pleatDirection = transform.multiply(direction);
+
+			// Both of the lines that form this pleat go in the same direction,
+			// but they start at different points
 			this._pleatLines.push(new Line(pointC, pleatDirection));
 			this._pleatLines.push(new Line(pointD, pleatDirection));
 		}
 
+		// Calculate the points along the tile polygon's edges from which each
+		// of the inner pleats will emanate
 		let centralPolygonPoints = [];
 		for (let i = 0; i < this._pleatLines.length - 2; i += 2) {
+			// Proceed in groups of 4 (i.e. 2 edges, each with 2 pleats)
 			const a = this._pleatLines[i + 0];
 			const b = this._pleatLines[i + 1];
 			const c = this._pleatLines[i + 2];
@@ -97,13 +147,20 @@ export class Tile {
 		this._pleatLines.pop();
 		this._pleatLines.pop();
 		this._centralPolygon = new Polygon(centralPolygonPoints);
+	}
 
-		// Draw all graphics
+	render() {
 		this._graphics.clear();
 
-		// Draw the outer tile polygon
-		this._graphics.lineStyle(4, 0xb5a6a5, 1);
-		this._graphics.beginFill(0xb5a6a5, 0.125);
+		const tan = 0xb5a6a5;
+		const orange = 0xd96448;
+		const red = 0xbf3054;
+		const mountain = 0xbd5e51;
+		const valley = 0x3259a8;
+
+		// Draw the tile polygon
+		this._graphics.lineStyle(4, tan);
+		this._graphics.beginFill(tan, 0.25);
 		this._graphics.drawPolygon(
 			this._tilePolygon.points
 				.map(point => {
@@ -111,10 +168,23 @@ export class Tile {
 				})
 				.flat()
 		);
+		this._graphics.endFill();
+
+		// Draw the vertices of the tile polygon
+		this._graphics.lineStyle(0);
+		this._graphics.beginFill(red, 0.25);
+		this._tilePolygon.points.forEach(point =>
+			this._graphics.drawCircle(
+				point.x + this._center.x,
+				point.y + this._center.y,
+				3.0
+			)
+		);
+		this._graphics.endFill();
 
 		// Draw the inner central polygon
-		this._graphics.lineStyle(3, 0xb5a6a5, 1);
-		this._graphics.beginFill(0xb5a6a5, 0.25);
+		this._graphics.lineStyle(2, mountain);
+		this._graphics.beginFill(tan, 0.25);
 		this._graphics.drawPolygon(
 			this._centralPolygon.points
 				.map(point => {
@@ -131,22 +201,34 @@ export class Tile {
 				line.point.y + this._center.y
 			);
 
+			// The index of the edge of the tile polygon that this pleat emanates from
 			let edgeIndex = Math.floor(index / 2);
 
-			if (index % 2 === 0) { // Mountain
-				this._graphics.lineStyle(3, 0xb5a6a5, 1);
+			if (index % 2 === 0) {
+				// Mountain fold
+				this._graphics.lineStyle(2, mountain);
 				edgeIndex -= 1;
 
-				if (edgeIndex < 0) edgeIndex = this._centralPolygon.points.length - 1;
+				// Wrap around
+				if (edgeIndex < 0) {
+					edgeIndex = this._centralPolygon.points.length - 1;
+				}
 
-			} else { // Valley			
-				this._graphics.lineStyle(2, 0xd96448, 1);
+				this._graphics.lineTo(
+					this._centralPolygon.points[edgeIndex].x + this._center.x,
+					this._centralPolygon.points[edgeIndex].y + this._center.y
+				);
+			} else {
+				// Valley fold
+				this._graphics.lineStyle(2, valley);
+
+				this._graphics.drawDashLine(
+					this._centralPolygon.points[edgeIndex].x + this._center.x,
+					this._centralPolygon.points[edgeIndex].y + this._center.y
+				);
 			}
 
-			this._graphics.lineTo(
-				this._centralPolygon.points[edgeIndex].x + this._center.x,
-				this._centralPolygon.points[edgeIndex].y + this._center.y
-			);
+
 
 			// Can also draw an infinite segment:
 			// const direction = line.point.addDisplacement(
@@ -158,14 +240,14 @@ export class Tile {
 			// );
 		});
 
+		// Draw the points along tile polygon edge's where the pleats intersect
 		this._graphics.lineStyle(0);
-
-		this._graphics.beginFill(0xbf3054);
+		this._graphics.beginFill(red);
 		this._edgePoints.forEach(point =>
 			this._graphics.drawCircle(
 				point.x + this._center.x,
 				point.y + this._center.y,
-				5.0
+				3.0
 			)
 		);
 		this._graphics.endFill();
@@ -179,16 +261,8 @@ export class Tile {
 		window.app.stage.addChild(this._graphics);
 	}
 
-	moveTo(x, y) {
-		this._center.x = x;
-		this._center.y = y;
-		this._dirty = true;
-	}
-
-	draw() {
-		if (this._dirty) {
-			this.update();
-			this._dirty = false;
-		}
+	update() {
+		this.recalculate();
+		this.render();
 	}
 }

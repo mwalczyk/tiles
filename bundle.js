@@ -1738,64 +1738,72 @@ var PIXI = _interopRequireWildcard(require("pixi.js"));
 
 var _tile = require("./tile");
 
+var _vector = require("./src/vector");
+
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; if (obj != null) { var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
 PIXI.Graphics.prototype.drawDashLine = function (toX, toY) {
-  var dash = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 16;
-  var gap = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 8;
-  var lastPosition = this.currentPath.shape.points;
-  var currentPosition = {
-    x: lastPosition[lastPosition.length - 2] || 0,
-    y: lastPosition[lastPosition.length - 1] || 0
-  };
-  var absValues = {
-    toX: Math.abs(toX),
-    toY: Math.abs(toY)
-  };
+  var dash = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 2;
+  var gap = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 2;
+  var lastPosition = this.currentPath.points;
+  var to = new _vector.Vector(toX, toY, 0.0);
+  var from = new _vector.Vector(lastPosition[lastPosition.length - 2], lastPosition[lastPosition.length - 1], 0.0);
+  var current = from;
+  var direction = to.subtract(from);
+  var pathLength = direction.length();
+  direction = direction.normalize();
+  var traversed = 0.0;
 
-  for (; Math.abs(currentPosition.x) < absValues.toX || Math.abs(currentPosition.y) < absValues.toY;) {
-    currentPosition.x = Math.abs(currentPosition.x + dash) < absValues.toX ? currentPosition.x + dash : toX;
-    currentPosition.y = Math.abs(currentPosition.y + dash) < absValues.toY ? currentPosition.y + dash : toY;
-    this.lineTo(currentPosition.x, currentPosition.y);
-    currentPosition.x = Math.abs(currentPosition.x + gap) < absValues.toX ? currentPosition.x + gap : toX;
-    currentPosition.y = Math.abs(currentPosition.y + gap) < absValues.toY ? currentPosition.y + gap : toY;
-    this.moveTo(currentPosition.x, currentPosition.y);
+  while (traversed < pathLength) {
+    current = current.add(direction.multiplyScalar(dash));
+    this.lineTo(current.x, current.y);
+    current = current.add(direction.multiplyScalar(gap));
+    this.moveTo(current.x, current.y);
+    traversed += dash + gap;
   }
 };
 
+var lightBlue = 0xd7dcde;
 var app = new PIXI.Application({
   width: 512,
   height: 512,
-  antialias: true
+  antialias: true,
+  resolution: 2
 });
-app.renderer.backgroundColor = 0xf2f0f0;
+app.renderer.backgroundColor = lightBlue;
 document.body.appendChild(app.view);
 window.app = app;
 window.addEventListener("mousemove", update);
-window.addEventListener("mousedown", draw);
+window.addEventListener("mousedown", redraw);
 var inputW = document.getElementById("input_w");
 var inputTau = document.getElementById("input_tau");
 var inputN = document.getElementById("input_n");
-inputW.addEventListener("input", draw);
-inputTau.addEventListener("input", draw);
-inputN.addEventListener("input", draw);
+var pCurrentTwistAngle = document.getElementById("p_current_twist_angle");
+var pSafeTwistAngle = document.getElementById("p_safe_twist_angle");
+inputW.addEventListener("input", redraw);
+inputTau.addEventListener("input", redraw);
+inputN.addEventListener("input", redraw);
 var tile = new _tile.Tile();
 
 function update(e) {}
 
-function draw(e) {
+function redraw(e) {
+  // Set tile parameters
   tile.w = parseFloat(inputW.value);
-  tile.tau = inputTau.value * (Math.PI / 180.0);
+  tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);
   tile.n = parseInt(inputN.value);
-  tile.draw();
+  pCurrentTwistAngle.innerHTML = "Current twist angle: ".concat((tile.alpha * (180.0 / Math.PI)).toFixed(2), " Degrees");
+  pSafeTwistAngle.innerHTML = "Safe twist angle: ".concat((tile.alphaSafe * (180.0 / Math.PI)).toFixed(2), " Degrees"); // Rebuild tile geometry and graphics objects
+
+  tile.update();
 } // Call this once to kick off the app
 
 
-draw();
+redraw();
 
-},{"./tile":58,"pixi.js":51}],10:[function(require,module,exports){
+},{"./src/vector":57,"./tile":58,"pixi.js":51}],10:[function(require,module,exports){
 /*!
  * @pixi/accessibility - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -44911,6 +44919,11 @@ function () {
   }
 
   _createClass(Polygon, [{
+    key: "isDegenerate",
+    value: function isDegenerate() {
+      return this._points.length < 3;
+    }
+  }, {
     key: "rotate",
     value: function rotate(theta) {
       var transform = _matrix.Matrix.rotationZ(theta);
@@ -44920,22 +44933,47 @@ function () {
       }
     }
   }, {
-    key: "area",
-    value: function area() {}
-  }, {
-    key: "perimeter",
-    value: function perimeter() {}
-  }, {
-    key: "centroid",
-    value: function centroid() {}
-  }, {
-    key: "perpendicularBisector",
-    value: function perpendicularBisector(index) {}
-  }, {
     key: "points",
     get: function get() {
       return this._points;
     }
+  }, {
+    key: "n",
+    get: function get() {
+      return this._points.length;
+    } // See: https://www.calculatorsoup.com/calculators/geometry-plane/polygon.php
+
+  }, {
+    key: "inradius",
+    get: function get() {}
+  }, {
+    key: "sideLength",
+    get: function get() {}
+  }, {
+    key: "circumRadius",
+    get: function get() {}
+  }, {
+    key: "area",
+    get: function get() {}
+  }, {
+    key: "perimeter",
+    get: function get() {}
+  }, {
+    key: "interiorAngle",
+    get: function get() {
+      return (90.0 - 180.0 / this.n) * (Math.PI / 180.0);
+    }
+  }, {
+    key: "exteriorAngle",
+    get: function get() {
+      return 360 / this.n * (Math.PI / 180.0);
+    }
+  }, {
+    key: "centroid",
+    get: function get() {}
+  }, {
+    key: "perpendicularBisector",
+    get: function get() {}
   }], [{
     key: "regular",
     value: function regular(radius, numberOfSides) {
@@ -45131,33 +45169,35 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
+/*
+ *
+ * A class representing a single centered twist tile.
+ *
+ */
 var Tile =
 /*#__PURE__*/
 function () {
-  function Tile() {
-    var w = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0.25;
-    var tau = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1.25;
-
+  function Tile(w, tau) {
     _classCallCheck(this, Tile);
 
-    if (w < 0.0 || w > 1.0) {
-      throw new Error("Invalid value for tile parameter `w`");
-    }
+    // The segment width ratio along each of the tile polygon's edges
+    this._w = 0.25; // The tilt angle of the twist
 
-    this._w = 0.25;
-    this._tau = tau;
-    this._n = 5;
-    this._graphics = new PIXI.Graphics();
-    this._center = new _point.Point(window.app.renderer.view.width * 0.5, window.app.renderer.view.height * 0.5, 0.0);
-    this._dirty = true;
+    this._tau = tau; // The number of sides on both the tile polygon and the central polygon
+
+    this._n = 5; // The PIXI graphics container
+
+    this._graphics = new PIXI.Graphics(); // Where this tile will be centered within the app's canvas
+
+    this._center = new _point.Point(window.app.renderer.view.width * 0.25, window.app.renderer.view.height * 0.25, 0.0);
+    this.update();
   }
 
   _createClass(Tile, [{
-    key: "update",
-    value: function update() {
-      var _this = this;
-
-      this._tilePolygon = _polygon.Polygon.regular(200.0, this._n); // A rotation matrix to rotate each edge of the tile polygon by `tau`
+    key: "recalculate",
+    value: function recalculate() {
+      var radius = Math.min(window.app.renderer.view.width, window.app.renderer.view.height) * 0.2;
+      this._tilePolygon = _polygon.Polygon.regular(radius, this._n); // A rotation matrix to rotate each edge of the tile polygon by `tau`
 
       var transform = _matrix.Matrix.rotationZ(this._tau);
 
@@ -45174,22 +45214,28 @@ function () {
         var edgeLength = direction.length();
         direction = direction.normalize();
         var distanceC = (1.0 - this._w) / 2.0 * edgeLength;
-        var distanceD = (1.0 + this._w) / 2.0 * edgeLength;
+        var distanceD = (1.0 + this._w) / 2.0 * edgeLength; // The two points that divide up this edge
+
         var pointC = pointA.addDisplacement(direction.multiplyScalar(distanceC));
         var pointD = pointA.addDisplacement(direction.multiplyScalar(distanceD));
 
-        this._edgePoints.push(pointC, pointD);
+        this._edgePoints.push(pointC, pointD); // The direction of this edge's pleats (unit vector)
 
-        var pleatDirection = transform.multiply(direction);
+
+        var pleatDirection = transform.multiply(direction); // Both of the lines that form this pleat go in the same direction,
+        // but they start at different points
 
         this._pleatLines.push(new _line.Line(pointC, pleatDirection));
 
         this._pleatLines.push(new _line.Line(pointD, pleatDirection));
-      }
+      } // Calculate the points along the tile polygon's edges from which each
+      // of the inner pleats will emanate
+
 
       var centralPolygonPoints = [];
 
       for (var _i = 0; _i < this._pleatLines.length - 2; _i += 2) {
+        // Proceed in groups of 4 (i.e. 2 edges, each with 2 pleats)
         var a = this._pleatLines[_i + 0];
         var b = this._pleatLines[_i + 1];
         var c = this._pleatLines[_i + 2];
@@ -45202,23 +45248,46 @@ function () {
 
       this._pleatLines.pop();
 
-      this._centralPolygon = new _polygon.Polygon(centralPolygonPoints); // Draw all graphics
+      this._centralPolygon = new _polygon.Polygon(centralPolygonPoints);
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var _this = this;
 
-      this._graphics.clear(); // Draw the outer tile polygon
+      this._graphics.clear();
 
+      var tan = 0xb5a6a5;
+      var orange = 0xd96448;
+      var red = 0xbf3054;
+      var mountain = 0xbd5e51;
+      var valley = 0x3259a8; // Draw the tile polygon
 
-      this._graphics.lineStyle(4, 0xb5a6a5, 1);
+      this._graphics.lineStyle(4, tan);
 
-      this._graphics.beginFill(0xb5a6a5, 0.125);
+      this._graphics.beginFill(tan, 0.25);
 
       this._graphics.drawPolygon(this._tilePolygon.points.map(function (point) {
         return [point.x + _this._center.x, point.y + _this._center.y];
-      }).flat()); // Draw the inner central polygon
+      }).flat());
+
+      this._graphics.endFill(); // Draw the vertices of the tile polygon
 
 
-      this._graphics.lineStyle(3, 0xb5a6a5, 1);
+      this._graphics.lineStyle(0);
 
-      this._graphics.beginFill(0xb5a6a5, 0.25);
+      this._graphics.beginFill(red, 0.25);
+
+      this._tilePolygon.points.forEach(function (point) {
+        return _this._graphics.drawCircle(point.x + _this._center.x, point.y + _this._center.y, 3.0);
+      });
+
+      this._graphics.endFill(); // Draw the inner central polygon
+
+
+      this._graphics.lineStyle(2, mountain);
+
+      this._graphics.beginFill(tan, 0.25);
 
       this._graphics.drawPolygon(this._centralPolygon.points.map(function (point) {
         return [point.x + _this._center.x, point.y + _this._center.y];
@@ -45228,22 +45297,28 @@ function () {
 
 
       this._pleatLines.forEach(function (line, index) {
-        _this._graphics.moveTo(line.point.x + _this._center.x, line.point.y + _this._center.y);
+        _this._graphics.moveTo(line.point.x + _this._center.x, line.point.y + _this._center.y); // The index of the edge of the tile polygon that this pleat emanates from
+
 
         var edgeIndex = Math.floor(index / 2);
 
         if (index % 2 === 0) {
-          // Mountain
-          _this._graphics.lineStyle(3, 0xb5a6a5, 1);
+          // Mountain fold
+          _this._graphics.lineStyle(2, mountain);
 
-          edgeIndex -= 1;
-          if (edgeIndex < 0) edgeIndex = _this._centralPolygon.points.length - 1;
+          edgeIndex -= 1; // Wrap around
+
+          if (edgeIndex < 0) {
+            edgeIndex = _this._centralPolygon.points.length - 1;
+          }
+
+          _this._graphics.lineTo(_this._centralPolygon.points[edgeIndex].x + _this._center.x, _this._centralPolygon.points[edgeIndex].y + _this._center.y);
         } else {
-          // Valley			
-          _this._graphics.lineStyle(2, 0xd96448, 1);
-        }
+          // Valley fold
+          _this._graphics.lineStyle(2, valley);
 
-        _this._graphics.lineTo(_this._centralPolygon.points[edgeIndex].x + _this._center.x, _this._centralPolygon.points[edgeIndex].y + _this._center.y); // Can also draw an infinite segment:
+          _this._graphics.drawDashLine(_this._centralPolygon.points[edgeIndex].x + _this._center.x, _this._centralPolygon.points[edgeIndex].y + _this._center.y);
+        } // Can also draw an infinite segment:
         // const direction = line.point.addDisplacement(
         // 	line.direction.multiplyScalar(150.0)
         // );
@@ -45252,14 +45327,15 @@ function () {
         // 	direction.y + this._center.y
         // );
 
-      });
+      }); // Draw the points along tile polygon edge's where the pleats intersect
+
 
       this._graphics.lineStyle(0);
 
-      this._graphics.beginFill(0xbf3054);
+      this._graphics.beginFill(red);
 
       this._edgePoints.forEach(function (point) {
-        return _this._graphics.drawCircle(point.x + _this._center.x, point.y + _this._center.y, 5.0);
+        return _this._graphics.drawCircle(point.x + _this._center.x, point.y + _this._center.y, 3.0);
       });
 
       this._graphics.endFill(); // Scale up everything and draw it at the center of the canvas
@@ -45272,41 +45348,53 @@ function () {
       window.app.stage.addChild(this._graphics);
     }
   }, {
-    key: "moveTo",
-    value: function moveTo(x, y) {
-      this._center.x = x;
-      this._center.y = y;
-      this._dirty = true;
-    }
-  }, {
-    key: "draw",
-    value: function draw() {
-      if (this._dirty) {
-        this.update();
-        this._dirty = false;
-      }
+    key: "update",
+    value: function update() {
+      this.recalculate();
+      this.render();
     }
   }, {
     key: "w",
     set: function set(w) {
-      if (w < 0.0 || w > 1.0) {
+      if (w <= 0.0 || w >= 1.0) {
         throw new Error("Invalid value for tile parameter `w`");
       }
 
       this._w = w;
-      this._dirty = true;
+    },
+    get: function get() {
+      return this._w;
     }
   }, {
     key: "tau",
     set: function set(tau) {
       this._tau = tau;
-      this._dirty = true;
+    },
+    get: function get() {
+      return this._tau;
     }
   }, {
     key: "n",
     set: function set(n) {
+      if (n < 3) {
+        throw new Error("Tile cannot have less than 3 sides");
+      }
+
       this._n = n;
-      this._dirty = true;
+    },
+    get: function get() {
+      return this._n;
+    }
+  }, {
+    key: "alphaSafe",
+    get: function get() {
+      return this._n <= 6 ? this._tilePolygon.interiorAngle : this._tilePolygon.exteriorAngle;
+    }
+  }, {
+    key: "alpha",
+    get: function get() {
+      // TODO: why is this negative?
+      return Math.abs(Math.atan(this.w * Math.tan(this.tau)));
     }
   }, {
     key: "species",
