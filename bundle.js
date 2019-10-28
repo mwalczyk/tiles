@@ -1744,7 +1744,7 @@ function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return 
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; if (obj != null) { var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
-PIXI.Graphics.prototype.drawDashLine = function (toX, toY) {
+PIXI.Graphics.prototype.dashedLineTo = function (toX, toY) {
   var dash = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 2;
   var gap = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 2;
   var lastPosition = this.currentPath.points;
@@ -1774,9 +1774,9 @@ var app = new PIXI.Application({
 });
 app.renderer.backgroundColor = lightBlue;
 document.body.appendChild(app.view);
-window.app = app;
-window.addEventListener("mousemove", update);
-window.addEventListener("mousedown", redraw);
+window.app = app; //window.addEventListener("mousemove", update);
+//window.addEventListener("mousedown", redraw);
+
 var inputW = document.getElementById("input_w");
 var inputTau = document.getElementById("input_tau");
 var inputN = document.getElementById("input_n");
@@ -1786,8 +1786,6 @@ inputW.addEventListener("input", redraw);
 inputTau.addEventListener("input", redraw);
 inputN.addEventListener("input", redraw);
 var tile = new _tile.Tile();
-
-function update(e) {}
 
 function redraw(e) {
   // Set tile parameters
@@ -45159,6 +45157,8 @@ var _point = require("./src/point");
 
 var _polygon = require("./src/polygon");
 
+var _vector = require("./src/vector");
+
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; if (obj != null) { var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
@@ -45171,7 +45171,7 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 
 /*
  *
- * A class representing a single centered twist tile.
+ * A class representing a single, centered twist tile.
  *
  */
 var Tile =
@@ -45185,7 +45185,7 @@ function () {
 
     this._tau = tau; // The number of sides on both the tile polygon and the central polygon
 
-    this._n = 5; // The PIXI graphics container
+    this._n = 6; // The PIXI graphics container
 
     this._graphics = new PIXI.Graphics(); // Where this tile will be centered within the app's canvas
 
@@ -45204,6 +45204,8 @@ function () {
       this._edgePoints = []; // The points along the edges of the tile polygon from which the pleats will emanate
 
       this._pleatLines = []; // The (infinite) lines that run along each of the pleats
+
+      this._pleatAssignments = [];
 
       for (var i = 0; i <= this._tilePolygon.points.length; i++) {
         var iModA = (i + 0) % this._tilePolygon.points.length;
@@ -45228,6 +45230,8 @@ function () {
         this._pleatLines.push(new _line.Line(pointC, pleatDirection));
 
         this._pleatLines.push(new _line.Line(pointD, pleatDirection));
+
+        this._pleatAssignments.push("M", "V");
       } // Calculate the points along the tile polygon's edges from which each
       // of the inner pleats will emanate
 
@@ -45255,10 +45259,11 @@ function () {
     value: function render() {
       var _this = this;
 
+      this._graphics.removeChildren();
+
       this._graphics.clear();
 
       var tan = 0xb5a6a5;
-      var orange = 0xd96448;
       var red = 0xbf3054;
       var mountain = 0xbd5e51;
       var valley = 0x3259a8; // Draw the tile polygon
@@ -45282,7 +45287,7 @@ function () {
         return _this._graphics.drawCircle(point.x + _this._center.x, point.y + _this._center.y, 3.0);
       });
 
-      this._graphics.endFill(); // Draw the inner central polygon
+      this._graphics.endFill(); // Draw the central polygon
 
 
       this._graphics.lineStyle(2, mountain);
@@ -45297,36 +45302,64 @@ function () {
 
 
       this._pleatLines.forEach(function (line, index) {
-        _this._graphics.moveTo(line.point.x + _this._center.x, line.point.y + _this._center.y); // The index of the edge of the tile polygon that this pleat emanates from
-
-
+        // The index of the edge of the tile polygon that this pleat emanates from
         var edgeIndex = Math.floor(index / 2);
+        var pleatLineStrokeSize = 2;
+        var pleatGraphics = new PIXI.Graphics();
+        pleatGraphics.moveTo(line.point.x + _this._center.x, line.point.y + _this._center.y);
 
         if (index % 2 === 0) {
-          // Mountain fold
-          _this._graphics.lineStyle(2, mountain);
-
           edgeIndex -= 1; // Wrap around
 
           if (edgeIndex < 0) {
             edgeIndex = _this._centralPolygon.points.length - 1;
           }
+        }
 
-          _this._graphics.lineTo(_this._centralPolygon.points[edgeIndex].x + _this._center.x, _this._centralPolygon.points[edgeIndex].y + _this._center.y);
+        if (_this._pleatAssignments[index] === "M") {
+          // Mountain fold
+          pleatGraphics.lineStyle(pleatLineStrokeSize, mountain);
+          pleatGraphics.lineTo(_this._centralPolygon.points[edgeIndex].x + _this._center.x, _this._centralPolygon.points[edgeIndex].y + _this._center.y);
         } else {
           // Valley fold
-          _this._graphics.lineStyle(2, valley);
+          pleatGraphics.lineStyle(pleatLineStrokeSize, valley);
+          pleatGraphics.dashedLineTo(_this._centralPolygon.points[edgeIndex].x + _this._center.x, _this._centralPolygon.points[edgeIndex].y + _this._center.y);
+        }
 
-          _this._graphics.drawDashLine(_this._centralPolygon.points[edgeIndex].x + _this._center.x, _this._centralPolygon.points[edgeIndex].y + _this._center.y);
-        } // Can also draw an infinite segment:
-        // const direction = line.point.addDisplacement(
-        // 	line.direction.multiplyScalar(150.0)
-        // );
-        // this._graphics.lineTo(
-        // 	direction.x + this._center.x,
-        // 	direction.y + this._center.y
-        // );
+        var orthogonal = new _vector.Vector(-line.direction.y, line.direction.x, 0.0);
+        orthogonal = orthogonal.normalize();
+        var customBoundsWidth = 10.0;
+        var customBounds = [// 1st point
+        line.point.x + _this._center.x + orthogonal.x * customBoundsWidth, line.point.y + _this._center.y + orthogonal.y * customBoundsWidth, // 2nd point
+        _this._centralPolygon.points[edgeIndex].x + _this._center.x + orthogonal.x * customBoundsWidth, _this._centralPolygon.points[edgeIndex].y + _this._center.y + orthogonal.y * customBoundsWidth, // 3rd point
+        _this._centralPolygon.points[edgeIndex].x + _this._center.x - orthogonal.x * customBoundsWidth, _this._centralPolygon.points[edgeIndex].y + _this._center.y - orthogonal.y * customBoundsWidth, // 4th point
+        line.point.x + _this._center.x - orthogonal.x * customBoundsWidth, line.point.y + _this._center.y - orthogonal.y * customBoundsWidth]; //this.svg.mousedown(this.onMouseDown.bind(this));
 
+        pleatGraphics.hitArea = new PIXI.Polygon(customBounds);
+
+        function onDragStart(event) {
+          this.alpha = 0.25; // Draw the bounds of this line
+
+          this.drawPolygon(this.hitArea); // Reverse the crease assignment
+
+          this.owner._pleatAssignments[this.index] = this.owner._pleatAssignments[this.index] === "M" ? "V" : "M";
+        }
+
+        function onDragEnd() {
+          this.alpha = 1.0;
+          this.owner.render();
+        } // Assign custom properties - we need to be able to trigger a re-draw if one 
+        // of the pleats is clicked
+
+
+        pleatGraphics.index = index;
+        pleatGraphics.owner = _this; // Make this pleat interactive
+
+        pleatGraphics.interactive = true;
+        pleatGraphics.buttonMode = true;
+        pleatGraphics.on("pointerdown", onDragStart).on("pointerup", onDragEnd).on("pointerupoutside", onDragEnd);
+
+        _this._graphics.addChild(pleatGraphics);
       }); // Draw the points along tile polygon edge's where the pleats intersect
 
 
@@ -45353,6 +45386,9 @@ function () {
       this.recalculate();
       this.render();
     }
+  }, {
+    key: "validate",
+    value: function validate() {}
   }, {
     key: "w",
     set: function set(w) {
@@ -45414,4 +45450,4 @@ function () {
 
 exports.Tile = Tile;
 
-},{"./src/line":53,"./src/matrix":54,"./src/point":55,"./src/polygon":56,"pixi.js":51}]},{},[9]);
+},{"./src/line":53,"./src/matrix":54,"./src/point":55,"./src/polygon":56,"./src/vector":57,"pixi.js":51}]},{},[9]);

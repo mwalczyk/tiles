@@ -4,10 +4,11 @@ import { Line } from "./src/line";
 import { Matrix } from "./src/matrix";
 import { Point } from "./src/point";
 import { Polygon } from "./src/polygon";
+import { Vector } from "./src/vector";
 
 /*
  *
- * A class representing a single centered twist tile.
+ * A class representing a single, centered twist tile.
  *
  */
 export class Tile {
@@ -19,7 +20,7 @@ export class Tile {
 		this._tau = tau;
 
 		// The number of sides on both the tile polygon and the central polygon
-		this._n = 5;
+		this._n = 6;
 
 		// The PIXI graphics container
 		this._graphics = new PIXI.Graphics();
@@ -98,6 +99,7 @@ export class Tile {
 
 		this._edgePoints = []; // The points along the edges of the tile polygon from which the pleats will emanate
 		this._pleatLines = []; // The (infinite) lines that run along each of the pleats
+		this._pleatAssignments = [];
 
 		for (let i = 0; i <= this._tilePolygon.points.length; i++) {
 			const iModA = (i + 0) % this._tilePolygon.points.length;
@@ -129,6 +131,7 @@ export class Tile {
 			// but they start at different points
 			this._pleatLines.push(new Line(pointC, pleatDirection));
 			this._pleatLines.push(new Line(pointD, pleatDirection));
+			this._pleatAssignments.push("M", "V");
 		}
 
 		// Calculate the points along the tile polygon's edges from which each
@@ -150,10 +153,10 @@ export class Tile {
 	}
 
 	render() {
+		this._graphics.removeChildren();
 		this._graphics.clear();
 
 		const tan = 0xb5a6a5;
-		const orange = 0xd96448;
 		const red = 0xbf3054;
 		const mountain = 0xbd5e51;
 		const valley = 0x3259a8;
@@ -182,7 +185,7 @@ export class Tile {
 		);
 		this._graphics.endFill();
 
-		// Draw the inner central polygon
+		// Draw the central polygon
 		this._graphics.lineStyle(2, mountain);
 		this._graphics.beginFill(tan, 0.25);
 		this._graphics.drawPolygon(
@@ -196,48 +199,106 @@ export class Tile {
 
 		// Draw the pleats
 		this._pleatLines.forEach((line, index) => {
-			this._graphics.moveTo(
+			// The index of the edge of the tile polygon that this pleat emanates from
+			let edgeIndex = Math.floor(index / 2);
+			const pleatLineStrokeSize = 2;
+
+			let pleatGraphics = new PIXI.Graphics();
+
+			pleatGraphics.moveTo(
 				line.point.x + this._center.x,
 				line.point.y + this._center.y
 			);
 
-			// The index of the edge of the tile polygon that this pleat emanates from
-			let edgeIndex = Math.floor(index / 2);
-
 			if (index % 2 === 0) {
-				// Mountain fold
-				this._graphics.lineStyle(2, mountain);
 				edgeIndex -= 1;
 
 				// Wrap around
 				if (edgeIndex < 0) {
 					edgeIndex = this._centralPolygon.points.length - 1;
 				}
+			}
 
-				this._graphics.lineTo(
+			if (this._pleatAssignments[index] === "M") {
+				// Mountain fold
+				pleatGraphics.lineStyle(pleatLineStrokeSize, mountain);
+				pleatGraphics.lineTo(
 					this._centralPolygon.points[edgeIndex].x + this._center.x,
 					this._centralPolygon.points[edgeIndex].y + this._center.y
 				);
 			} else {
 				// Valley fold
-				this._graphics.lineStyle(2, valley);
-
-				this._graphics.drawDashLine(
+				pleatGraphics.lineStyle(pleatLineStrokeSize, valley);
+				pleatGraphics.dashedLineTo(
 					this._centralPolygon.points[edgeIndex].x + this._center.x,
 					this._centralPolygon.points[edgeIndex].y + this._center.y
 				);
 			}
 
+			let orthogonal = new Vector(-line.direction.y, line.direction.x, 0.0);
+			orthogonal = orthogonal.normalize();
 
+			const customBoundsWidth = 10.0;
+			const customBounds = [
+				// 1st point
+				line.point.x + this._center.x + orthogonal.x * customBoundsWidth,
+				line.point.y + this._center.y + orthogonal.y * customBoundsWidth,
 
-			// Can also draw an infinite segment:
-			// const direction = line.point.addDisplacement(
-			// 	line.direction.multiplyScalar(150.0)
-			// );
-			// this._graphics.lineTo(
-			// 	direction.x + this._center.x,
-			// 	direction.y + this._center.y
-			// );
+				// 2nd point
+				this._centralPolygon.points[edgeIndex].x +
+					this._center.x +
+					orthogonal.x * customBoundsWidth,
+				this._centralPolygon.points[edgeIndex].y +
+					this._center.y +
+					orthogonal.y * customBoundsWidth,
+
+				// 3rd point
+				this._centralPolygon.points[edgeIndex].x +
+					this._center.x -
+					orthogonal.x * customBoundsWidth,
+				this._centralPolygon.points[edgeIndex].y +
+					this._center.y -
+					orthogonal.y * customBoundsWidth,
+
+				// 4th point
+				line.point.x + this._center.x - orthogonal.x * customBoundsWidth,
+				line.point.y + this._center.y - orthogonal.y * customBoundsWidth
+			];
+
+			//this.svg.mousedown(this.onMouseDown.bind(this));
+
+			pleatGraphics.hitArea = new PIXI.Polygon(customBounds);
+
+			function onDragStart(event) {
+				this.alpha = 0.25;
+
+				// Draw the bounds of this line
+				this.drawPolygon(this.hitArea);
+
+				// Reverse the crease assignment
+				this.owner._pleatAssignments[this.index] =
+					this.owner._pleatAssignments[this.index] === "M" ? "V" : "M";
+			}
+
+			function onDragEnd() {
+				this.alpha = 1.0;
+				this.owner.render();
+			}
+
+			// Assign custom properties - we need to be able to trigger a re-draw if one 
+			// of the pleats is clicked
+			pleatGraphics.index = index;
+			pleatGraphics.owner = this;
+
+			// Make this pleat interactive
+			pleatGraphics.interactive = true;
+			pleatGraphics.buttonMode = true;
+			pleatGraphics
+				.on("pointerdown", onDragStart)
+				.on("pointerup", onDragEnd)
+				.on("pointerupoutside", onDragEnd);
+
+			this._graphics.addChild(pleatGraphics);
 		});
 
 		// Draw the points along tile polygon edge's where the pleats intersect
@@ -264,5 +325,9 @@ export class Tile {
 	update() {
 		this.recalculate();
 		this.render();
+	}
+
+	validate() {
+		
 	}
 }

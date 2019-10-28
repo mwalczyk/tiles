@@ -3,7 +3,7 @@ import * as PIXI from "pixi.js";
 import { Tile } from "./tile";
 import { Vector } from "./src/vector";
 
-PIXI.Graphics.prototype.drawDashLine = function(toX, toY, dash = 2, gap = 2) {
+PIXI.Graphics.prototype.dashedLineTo = function(toX, toY, dash = 2, gap = 2) {
 	const lastPosition = this.currentPath.points;
 
 	let to = new Vector(toX, toY, 0.0);
@@ -41,8 +41,8 @@ app.renderer.backgroundColor = lightBlue;
 
 document.body.appendChild(app.view);
 window.app = app;
-window.addEventListener("mousemove", update);
-window.addEventListener("mousedown", redraw);
+//window.addEventListener("mousemove", update);
+//window.addEventListener("mousedown", redraw);
 
 const inputW = document.getElementById("input_w");
 const inputTau = document.getElementById("input_tau");
@@ -54,8 +54,6 @@ inputTau.addEventListener("input", redraw);
 inputN.addEventListener("input", redraw);
 
 const tile = new Tile();
-
-function update(e) {}
 
 function redraw(e) {
 	// Set tile parameters
