@@ -20,7 +20,7 @@ export class Tile {
 		this._tau = tau;
 
 		// The number of sides on both the tile polygon and the central polygon
-		this._n = 6;
+		this._n = 4;
 
 		// The PIXI graphics container
 		this._graphics = new PIXI.Graphics();
@@ -32,7 +32,9 @@ export class Tile {
 			0.0
 		);
 
-		this.update();
+		//this.update();
+		this.recalculate();
+		this.render();
 	}
 
 	set w(w) {
@@ -101,7 +103,7 @@ export class Tile {
 
 		// The (infinite) lines that run along each of the pleats
 		let pleatLines = [];
-		for (let i = 0; i <= this._tilePolygon.points.length; i++) {
+		for (let i = 0; i < this._tilePolygon.points.length; i++) {
 			// When we reach the last edge of the tile polygon, we need to wrap
 			// the vertex indices around to form a closed loop
 			const iModA = (i + 0) % this._tilePolygon.points.length;
@@ -135,18 +137,15 @@ export class Tile {
 		// Calculate the points along the tile polygon's edges from which each
 		// of the inner pleats will emanate
 		let centralPolygonPoints = [];
-		for (let i = 0; i < pleatLines.length - 2; i += 2) {
-			// Proceed in groups of 4 (i.e. 2 edges, each with 2 pleats)
-			const a = pleatLines[i + 0];
-			const b = pleatLines[i + 1];
-			const c = pleatLines[i + 2];
-			const d = pleatLines[i + 3];
+		for (let i = 0; i < pleatLines.length; i += 2) {
+			// Proceed in groups of 4 (i.e. 2 edges, each with a single pleat, which is
+			// itself, 2 line segments)
+			const a = pleatLines[(i + 0) % pleatLines.length];
+			const b = pleatLines[(i + 1) % pleatLines.length];
+			const c = pleatLines[(i + 2) % pleatLines.length];
+			const d = pleatLines[(i + 3) % pleatLines.length];
 			centralPolygonPoints.push(b.intersect(c));
 		}
-
-		// Remove the last two lines, as they are duplicates of the first two
-		pleatLines.pop();
-		pleatLines.pop();
 		this._centralPolygon = new Polygon(centralPolygonPoints);
 
 		// Now, construct the vertices, edges, and assignments that will form this
@@ -155,7 +154,6 @@ export class Tile {
 		this._edges = [];
 		this._assignments = [];
 
-		// Add creases from the pleats
 		pleatLines.forEach((line, index) => {
 			// The index of the edge of the tile polygon from which this pleat emanates
 			let edgeIndex = Math.floor(index / 2);
@@ -170,24 +168,28 @@ export class Tile {
 				}
 			}
 
-			this._vertices.push(line.point, this._centralPolygon.points[edgeIndex]);
-			this._edges.push([index * 2 + 0, index * 2 + 1]);
-			this._assignments.push(index % 2 === 0 ? "M" : "V");
+			const expectedVertexCount = this._n + this._n * 2;
+
+			if (index % 2 === 0) {
+				this._vertices.push(line.point, this._centralPolygon.points[edgeIndex]);
+				this._edges.push([this._vertices.length - 2, this._vertices.length - 1]);
+				this._assignments.push("M");
+			} else {
+				this._vertices.push(line.point);
+				this._edges.push([this._vertices.length - 1, (this._vertices.length + 1) % expectedVertexCount]);
+				this._assignments.push("V");
+
+				// The crease along the central polygon
+				this._edges.push([(this._vertices.length + 1) % expectedVertexCount, this._vertices.length - 2]);
+				this._assignments.push("M");
+			}
 		});
-
-		// Add creases around the central polygon
-		for (let i = 0; i < this._centralPolygon.points.length; i++) {
-			const iModA = (i + 0) % this._centralPolygon.points.length;
-			const iModB = (i + 1) % this._centralPolygon.points.length;
-			const pointA = this._centralPolygon.points[iModA];
-			const pointB = this._centralPolygon.points[iModB];
-
-			this._edges.push([this._vertices.length + 0, this._vertices.length + 1]);
-			this._vertices.push(pointA, pointB);
-			this._assignments.push("M");
-		}
 	}
 
+	buildEdgesAndAssignments() {
+		
+	}
+	
 	render() {
 		const tan = 0xb5a6a5;
 		const red = 0xbf3054;
@@ -242,9 +244,13 @@ export class Tile {
 				);
 				vertexGraphics.endFill();
 
-				// Add interactivity to this vertex: when the user mouses over it, 
-				// display some information 
-				vertexGraphics.hitArea = new PIXI.Circle(vertex.x + this._center.x, vertex.y + this._center.y, 6.0);
+				// Add interactivity to this vertex: when the user mouses over it,
+				// display some information
+				vertexGraphics.hitArea = new PIXI.Circle(
+					vertex.x + this._center.x,
+					vertex.y + this._center.y,
+					12.0
+				);
 				vertexGraphics.index = index;
 				vertexGraphics.owner = this;
 				vertexGraphics.interactive = true;
@@ -252,13 +258,11 @@ export class Tile {
 				vertexGraphics.zIndex = 1;
 
 				vertexGraphics.mouseover = function() {
-				  //this.alpha = 0.25;
 					this.children.forEach(child => (child.visible = true));
-				}
+				};
 				vertexGraphics.mouseout = function() {
-				  this.alpha = 1.0;
 					this.children.forEach(child => (child.visible = false));
-				}
+				};
 
 				const style = new PIXI.TextStyle({
 					fontFamily: "Arial",
@@ -275,6 +279,7 @@ export class Tile {
 				labelGraphics.y = vertex.y + this._center.y - textSpacing;
 				labelGraphics.endFill();
 				labelGraphics.visible = false;
+				labelGraphics.zIndex = 2;
 				labelGraphics.addChild(text);
 
 				vertexGraphics.addChild(labelGraphics);
@@ -316,7 +321,7 @@ export class Tile {
 			let orthogonal = new Vector(-direction.y, direction.x, 0.0);
 			orthogonal = orthogonal.normalize();
 
-			const customBoundsWidth = 10.0;
+			const customBoundsWidth = 14.0;
 			const customBounds = [
 				// 1st point
 				this._vertices[a].x + this._center.x + orthogonal.x * customBoundsWidth,

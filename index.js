@@ -41,8 +41,6 @@ app.renderer.backgroundColor = lightBlue;
 
 document.body.appendChild(app.view);
 window.app = app;
-//window.addEventListener("mousemove", update);
-//window.addEventListener("mousedown", redraw);
 
 const inputW = document.getElementById("input_w");
 const inputTau = document.getElementById("input_tau");
@@ -59,13 +57,19 @@ function redraw(e) {
 	// Set tile parameters
 	tile.w = parseFloat(inputW.value);
 	tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);
-	tile.n = parseInt(inputN.value);
+
+	if (parseInt(inputN.value) !== tile.n) {
+		tile.n = parseInt(inputN.value);
+		
+	}
+	
 
 	pCurrentTwistAngle.innerHTML = `Current twist angle: ${(tile.alpha * (180.0 / Math.PI)).toFixed(2)} Degrees`;
 	pSafeTwistAngle.innerHTML = `Safe twist angle: ${(tile.alphaSafe * (180.0 / Math.PI)).toFixed(2)} Degrees`;
 
 	// Rebuild tile geometry and graphics objects
-	tile.update();
+	tile.recalculate();
+	tile.render();
 }
 
 // Call this once to kick off the app

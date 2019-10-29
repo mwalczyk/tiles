@@ -1774,9 +1774,7 @@ var app = new PIXI.Application({
 });
 app.renderer.backgroundColor = lightBlue;
 document.body.appendChild(app.view);
-window.app = app; //window.addEventListener("mousemove", update);
-//window.addEventListener("mousedown", redraw);
-
+window.app = app;
 var inputW = document.getElementById("input_w");
 var inputTau = document.getElementById("input_tau");
 var inputN = document.getElementById("input_n");
@@ -1791,11 +1789,16 @@ function redraw(e) {
   // Set tile parameters
   tile.w = parseFloat(inputW.value);
   tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);
-  tile.n = parseInt(inputN.value);
+
+  if (parseInt(inputN.value) !== tile.n) {
+    tile.n = parseInt(inputN.value);
+  }
+
   pCurrentTwistAngle.innerHTML = "Current twist angle: ".concat((tile.alpha * (180.0 / Math.PI)).toFixed(2), " Degrees");
   pSafeTwistAngle.innerHTML = "Safe twist angle: ".concat((tile.alphaSafe * (180.0 / Math.PI)).toFixed(2), " Degrees"); // Rebuild tile geometry and graphics objects
 
-  tile.update();
+  tile.recalculate();
+  tile.render();
 } // Call this once to kick off the app
 
 
@@ -45193,12 +45196,14 @@ function () {
 
     this._tau = tau; // The number of sides on both the tile polygon and the central polygon
 
-    this._n = 6; // The PIXI graphics container
+    this._n = 4; // The PIXI graphics container
 
     this._graphics = new PIXI.Graphics(); // Where this tile will be centered within the app's canvas
 
-    this._center = new _point.Point(window.app.renderer.view.width * 0.25, window.app.renderer.view.height * 0.25, 0.0);
-    this.update();
+    this._center = new _point.Point(window.app.renderer.view.width * 0.25, window.app.renderer.view.height * 0.25, 0.0); //this.update();
+
+    this.recalculate();
+    this.render();
   }
 
   _createClass(Tile, [{
@@ -45216,7 +45221,7 @@ function () {
 
       var pleatLines = [];
 
-      for (var i = 0; i <= this._tilePolygon.points.length; i++) {
+      for (var i = 0; i < this._tilePolygon.points.length; i++) {
         // When we reach the last edge of the tile polygon, we need to wrap
         // the vertex indices around to form a closed loop
         var iModA = (i + 0) % this._tilePolygon.points.length;
@@ -45243,25 +45248,22 @@ function () {
 
       var centralPolygonPoints = [];
 
-      for (var _i = 0; _i < pleatLines.length - 2; _i += 2) {
-        // Proceed in groups of 4 (i.e. 2 edges, each with 2 pleats)
-        var a = pleatLines[_i + 0];
-        var b = pleatLines[_i + 1];
-        var c = pleatLines[_i + 2];
-        var d = pleatLines[_i + 3];
+      for (var _i = 0; _i < pleatLines.length; _i += 2) {
+        // Proceed in groups of 4 (i.e. 2 edges, each with a single pleat, which is
+        // itself, 2 line segments)
+        var a = pleatLines[(_i + 0) % pleatLines.length];
+        var b = pleatLines[(_i + 1) % pleatLines.length];
+        var c = pleatLines[(_i + 2) % pleatLines.length];
+        var d = pleatLines[(_i + 3) % pleatLines.length];
         centralPolygonPoints.push(b.intersect(c));
-      } // Remove the last two lines, as they are duplicates of the first two
+      }
 
-
-      pleatLines.pop();
-      pleatLines.pop();
       this._centralPolygon = new _polygon.Polygon(centralPolygonPoints); // Now, construct the vertices, edges, and assignments that will form this
       // tile's crease pattern
 
       this._vertices = [];
       this._edges = [];
-      this._assignments = []; // Add creases from the pleats
-
+      this._assignments = [];
       pleatLines.forEach(function (line, index) {
         // The index of the edge of the tile polygon from which this pleat emanates
         var edgeIndex = Math.floor(index / 2);
@@ -45277,28 +45279,31 @@ function () {
           }
         }
 
-        _this._vertices.push(line.point, _this._centralPolygon.points[edgeIndex]);
+        var expectedVertexCount = _this._n + _this._n * 2;
 
-        _this._edges.push([index * 2 + 0, index * 2 + 1]);
+        if (index % 2 === 0) {
+          _this._vertices.push(line.point, _this._centralPolygon.points[edgeIndex]);
 
-        _this._assignments.push(index % 2 === 0 ? "M" : "V");
-      }); // Add creases around the central polygon
+          _this._edges.push([_this._vertices.length - 2, _this._vertices.length - 1]);
 
-      for (var _i2 = 0; _i2 < this._centralPolygon.points.length; _i2++) {
-        var _iModA = (_i2 + 0) % this._centralPolygon.points.length;
+          _this._assignments.push("M");
+        } else {
+          _this._vertices.push(line.point);
 
-        var _iModB = (_i2 + 1) % this._centralPolygon.points.length;
+          _this._edges.push([_this._vertices.length - 1, (_this._vertices.length + 1) % expectedVertexCount]);
 
-        var _pointA = this._centralPolygon.points[_iModA];
-        var _pointB = this._centralPolygon.points[_iModB];
+          _this._assignments.push("V"); // The crease along the central polygon
 
-        this._edges.push([this._vertices.length + 0, this._vertices.length + 1]);
 
-        this._vertices.push(_pointA, _pointB);
+          _this._edges.push([(_this._vertices.length + 1) % expectedVertexCount, _this._vertices.length - 2]);
 
-        this._assignments.push("M");
-      }
+          _this._assignments.push("M");
+        }
+      });
     }
+  }, {
+    key: "buildEdgesAndAssignments",
+    value: function buildEdgesAndAssignments() {}
   }, {
     key: "render",
     value: function render() {
@@ -45341,10 +45346,10 @@ function () {
           vertexGraphics.lineStyle(0);
           vertexGraphics.beginFill(red);
           vertexGraphics.drawCircle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 3.0);
-          vertexGraphics.endFill(); // Add interactivity to this vertex: when the user mouses over it, 
-          // display some information 
+          vertexGraphics.endFill(); // Add interactivity to this vertex: when the user mouses over it,
+          // display some information
 
-          vertexGraphics.hitArea = new PIXI.Circle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 6.0);
+          vertexGraphics.hitArea = new PIXI.Circle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 12.0);
           vertexGraphics.index = index;
           vertexGraphics.owner = _this2;
           vertexGraphics.interactive = true;
@@ -45352,14 +45357,12 @@ function () {
           vertexGraphics.zIndex = 1;
 
           vertexGraphics.mouseover = function () {
-            //this.alpha = 0.25;
             this.children.forEach(function (child) {
               return child.visible = true;
             });
           };
 
           vertexGraphics.mouseout = function () {
-            this.alpha = 1.0;
             this.children.forEach(function (child) {
               return child.visible = false;
             });
@@ -45379,6 +45382,7 @@ function () {
           labelGraphics.y = vertex.y + _this2._center.y - textSpacing;
           labelGraphics.endFill();
           labelGraphics.visible = false;
+          labelGraphics.zIndex = 2;
           labelGraphics.addChild(text);
           vertexGraphics.addChild(labelGraphics);
 
@@ -45411,7 +45415,7 @@ function () {
 
         var orthogonal = new _vector.Vector(-direction.y, direction.x, 0.0);
         orthogonal = orthogonal.normalize();
-        var customBoundsWidth = 10.0;
+        var customBoundsWidth = 14.0;
         var customBounds = [// 1st point
         _this2._vertices[a].x + _this2._center.x + orthogonal.x * customBoundsWidth, _this2._vertices[a].y + _this2._center.y + orthogonal.y * customBoundsWidth, // 2nd point
         _this2._vertices[b].x + _this2._center.x + orthogonal.x * customBoundsWidth, _this2._vertices[b].y + _this2._center.y + orthogonal.y * customBoundsWidth, // 3rd point
