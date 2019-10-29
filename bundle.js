@@ -45163,6 +45163,14 @@ function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return 
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; if (obj != null) { var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, i) { if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) { return; } var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
@@ -45200,18 +45208,17 @@ function () {
 
       var radius = Math.min(window.app.renderer.view.width, window.app.renderer.view.height) * 0.2; // First, create the tile polygon
 
-      this._tilePolygon = _polygon.Polygon.regular(radius, this._n); // Then, construct a rotation matrix to rotate each edge of the tile polygon 
+      this._tilePolygon = _polygon.Polygon.regular(radius, this._n); // Then, construct a rotation matrix to rotate each edge of the tile polygon
       // by tilt angle `tau`
 
-      var transform = _matrix.Matrix.rotationZ(this._tau);
+      var transform = _matrix.Matrix.rotationZ(this._tau); // The (infinite) lines that run along each of the pleats
 
-      this._edgePoints = []; // The points along the edges of the tile polygon from which the pleats will emanate
 
-      this._pleatLines = []; // The (infinite) lines that run along each of the pleats
-
-      this._pleatAssignments = [];
+      var pleatLines = [];
 
       for (var i = 0; i <= this._tilePolygon.points.length; i++) {
+        // When we reach the last edge of the tile polygon, we need to wrap
+        // the vertex indices around to form a closed loop
         var iModA = (i + 0) % this._tilePolygon.points.length;
         var iModB = (i + 1) % this._tilePolygon.points.length;
         var pointA = this._tilePolygon.points[iModA];
@@ -45220,59 +45227,77 @@ function () {
         var edgeLength = direction.length();
         direction = direction.normalize();
         var distanceC = (1.0 - this._w) / 2.0 * edgeLength;
-        var distanceD = (1.0 + this._w) / 2.0 * edgeLength; // The two points that divide up this edge
+        var distanceD = (1.0 + this._w) / 2.0 * edgeLength; // The two points that divide this edge
 
         var pointC = pointA.addDisplacement(direction.multiplyScalar(distanceC));
-        var pointD = pointA.addDisplacement(direction.multiplyScalar(distanceD));
-
-        this._edgePoints.push(pointC, pointD); // The direction of this edge's pleats (unit vector)
-
+        var pointD = pointA.addDisplacement(direction.multiplyScalar(distanceD)); // The direction of the new pleats (unit vector)
 
         var pleatDirection = transform.multiply(direction); // Both of the lines that form this pleat go in the same direction,
         // but they start at different points
 
-        this._pleatLines.push(new _line.Line(pointC, pleatDirection));
-
-        this._pleatLines.push(new _line.Line(pointD, pleatDirection));
-
-        this._pleatAssignments.push("M", "V");
+        pleatLines.push(new _line.Line(pointC, pleatDirection));
+        pleatLines.push(new _line.Line(pointD, pleatDirection));
       } // Calculate the points along the tile polygon's edges from which each
       // of the inner pleats will emanate
 
 
       var centralPolygonPoints = [];
 
-      for (var _i = 0; _i < this._pleatLines.length - 2; _i += 2) {
+      for (var _i = 0; _i < pleatLines.length - 2; _i += 2) {
         // Proceed in groups of 4 (i.e. 2 edges, each with 2 pleats)
-        var a = this._pleatLines[_i + 0];
-        var b = this._pleatLines[_i + 1];
-        var c = this._pleatLines[_i + 2];
-        var d = this._pleatLines[_i + 3];
+        var a = pleatLines[_i + 0];
+        var b = pleatLines[_i + 1];
+        var c = pleatLines[_i + 2];
+        var d = pleatLines[_i + 3];
         centralPolygonPoints.push(b.intersect(c));
       } // Remove the last two lines, as they are duplicates of the first two
 
 
-      this._pleatLines.pop();
+      pleatLines.pop();
+      pleatLines.pop();
+      this._centralPolygon = new _polygon.Polygon(centralPolygonPoints); // Now, construct the vertices, edges, and assignments that will form this
+      // tile's crease pattern
 
-      this._pleatLines.pop();
+      this._vertices = [];
+      this._edges = [];
+      this._assignments = []; // Add creases from the pleats
 
-      this._centralPolygon = new _polygon.Polygon(centralPolygonPoints);
-
-      this._pleatLines.forEach(function (line, index) {
-        // Construct edge indices
+      pleatLines.forEach(function (line, index) {
+        // The index of the edge of the tile polygon from which this pleat emanates
         var edgeIndex = Math.floor(index / 2);
 
         if (index % 2 === 0) {
-          edgeIndex -= 1; // Wrap around
+          // The first crease of each pleat actually connects to the previous vertex -
+          // we also want to make sure that the first time this happens, we wrap around
+          // to what actually corresponds to the *last* vertex of the central polygon
+          edgeIndex -= 1;
 
           if (edgeIndex < 0) {
             edgeIndex = _this._centralPolygon.points.length - 1;
           }
-        } // This pleat connects to:
+        }
 
+        _this._vertices.push(line.point, _this._centralPolygon.points[edgeIndex]);
 
-        _this._centralPolygon.points[edgeIndex]; // Alternate M and V assignments
-      });
+        _this._edges.push([index * 2 + 0, index * 2 + 1]);
+
+        _this._assignments.push(index % 2 === 0 ? "M" : "V");
+      }); // Add creases around the central polygon
+
+      for (var _i2 = 0; _i2 < this._centralPolygon.points.length; _i2++) {
+        var _iModA = (_i2 + 0) % this._centralPolygon.points.length;
+
+        var _iModB = (_i2 + 1) % this._centralPolygon.points.length;
+
+        var _pointA = this._centralPolygon.points[_iModA];
+        var _pointB = this._centralPolygon.points[_iModB];
+
+        this._edges.push([this._vertices.length + 0, this._vertices.length + 1]);
+
+        this._vertices.push(_pointA, _pointB);
+
+        this._assignments.push("M");
+      }
     }
   }, {
     key: "render",
@@ -45288,111 +45313,139 @@ function () {
 
       this._graphics.clear();
 
+      this._graphics.sortableChildren = true;
       {
-        // Draw the tile polygon
-        this._graphics.lineStyle(4, tan);
+        var tileGraphics = new PIXI.Graphics(); // Draw the tile polygon
 
-        this._graphics.beginFill(tan, 0.25);
-
-        this._graphics.drawPolygon(this._tilePolygon.points.map(function (point) {
+        tileGraphics.lineStyle(4, tan);
+        tileGraphics.beginFill(tan, 0.25);
+        tileGraphics.drawPolygon(this._tilePolygon.points.map(function (point) {
           return [point.x + _this2._center.x, point.y + _this2._center.y];
         }).flat());
+        tileGraphics.endFill(); // Draw the vertices of the tile polygon
 
-        this._graphics.endFill(); // Draw the vertices of the tile polygon
-
-
-        this._graphics.lineStyle(0);
-
-        this._graphics.beginFill(red, 0.25);
+        tileGraphics.lineStyle(0);
+        tileGraphics.beginFill(tan);
 
         this._tilePolygon.points.forEach(function (point) {
-          return _this2._graphics.drawCircle(point.x + _this2._center.x, point.y + _this2._center.y, 3.0);
+          return tileGraphics.drawCircle(point.x + _this2._center.x, point.y + _this2._center.y, 5.0);
         });
 
-        this._graphics.endFill(); // Draw the central polygon
+        tileGraphics.endFill(); // Draw the central polygon - do not draw stroked, as the creases
+        // will be drawn separately below
 
-
-        this._graphics.lineStyle(2, mountain);
-
-        this._graphics.beginFill(tan, 0.25);
-
-        this._graphics.drawPolygon(this._centralPolygon.points.map(function (point) {
+        tileGraphics.lineStyle(0);
+        tileGraphics.beginFill(tan, 0.25);
+        tileGraphics.drawPolygon(this._centralPolygon.points.map(function (point) {
           return [point.x + _this2._center.x, point.y + _this2._center.y];
         }).flat());
+        tileGraphics.endFill();
 
-        this._graphics.endFill(); // Draw the points along tile polygon edge's where the pleats intersect
+        this._graphics.addChild(tileGraphics);
+      }
+      {
+        // Draw the vertices of the crease pattern
+        this._vertices.forEach(function (vertex, index) {
+          var vertexGraphics = new PIXI.Graphics();
+          vertexGraphics.lineStyle(0);
+          vertexGraphics.beginFill(red);
+          vertexGraphics.drawCircle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 4.0);
+          vertexGraphics.endFill();
 
-
-        this._graphics.lineStyle(0);
-
-        this._graphics.beginFill(red);
-
-        this._edgePoints.forEach(function (point) {
-          return _this2._graphics.drawCircle(point.x + _this2._center.x, point.y + _this2._center.y, 3.0);
-        });
-
-        this._graphics.endFill();
-      } // Draw the pleats
-
-      this._pleatLines.forEach(function (line, index) {
-        // The index of the edge of the tile polygon that this pleat emanates from
-        var edgeIndex = Math.floor(index / 2);
-        var pleatLineStrokeSize = 2;
-        var pleatGraphics = new PIXI.Graphics();
-        pleatGraphics.moveTo(line.point.x + _this2._center.x, line.point.y + _this2._center.y);
-
-        if (index % 2 === 0) {
-          edgeIndex -= 1; // Wrap around
-
-          if (edgeIndex < 0) {
-            edgeIndex = _this2._centralPolygon.points.length - 1;
+          function onDragStart(event) {
+            this.alpha = 0.25;
+            this.children.forEach(function (child) {
+              return child.visible = true;
+            });
           }
-        }
 
-        if (_this2._pleatAssignments[index] === "M") {
+          function onDragEnd() {
+            this.alpha = 1.0;
+            this.children.forEach(function (child) {
+              return child.visible = false;
+            });
+          }
+
+          vertexGraphics.index = index;
+          vertexGraphics.owner = _this2;
+          vertexGraphics.interactive = true;
+          vertexGraphics.buttonMode = true;
+          vertexGraphics.zIndex = 1;
+          vertexGraphics.on("pointerdown", onDragStart).on("pointerup", onDragEnd).on("pointerupoutside", onDragEnd);
+          var style = new PIXI.TextStyle({
+            fontFamily: "Courier New",
+            fontWeight: "bold",
+            fontSize: 16,
+            fill: 0x000000
+          });
+          var label = new PIXI.Text(index.toString(), style);
+          label.x = vertex.x + _this2._center.x + 10.0;
+          label.y = vertex.y + _this2._center.y - 10.0;
+          label.visible = false;
+          vertexGraphics.addChild(label);
+
+          _this2._graphics.addChild(vertexGraphics);
+        });
+      }
+
+      this._edges.forEach(function (edgeIndices, edgeIndex) {
+        var pleatLineStrokeSize = 2;
+        var edgeGraphics = new PIXI.Graphics();
+
+        var _edgeIndices = _slicedToArray(edgeIndices, 2),
+            a = _edgeIndices[0],
+            b = _edgeIndices[1];
+
+        edgeGraphics.moveTo(_this2._vertices[a].x + _this2._center.x, _this2._vertices[a].y + _this2._center.y);
+
+        if (_this2._assignments[edgeIndex] === "M") {
           // Mountain fold
-          pleatGraphics.lineStyle(pleatLineStrokeSize, mountain);
-          pleatGraphics.lineTo(_this2._centralPolygon.points[edgeIndex].x + _this2._center.x, _this2._centralPolygon.points[edgeIndex].y + _this2._center.y);
+          edgeGraphics.lineStyle(pleatLineStrokeSize, mountain);
+          edgeGraphics.lineTo(_this2._vertices[b].x + _this2._center.x, _this2._vertices[b].y + _this2._center.y);
         } else {
           // Valley fold
-          pleatGraphics.lineStyle(pleatLineStrokeSize, valley);
-          pleatGraphics.dashedLineTo(_this2._centralPolygon.points[edgeIndex].x + _this2._center.x, _this2._centralPolygon.points[edgeIndex].y + _this2._center.y);
-        }
+          edgeGraphics.lineStyle(pleatLineStrokeSize, valley);
+          edgeGraphics.dashedLineTo(_this2._vertices[b].x + _this2._center.x, _this2._vertices[b].y + _this2._center.y);
+        } // A direction vector that runs parallel to this edge
 
-        var orthogonal = new _vector.Vector(-line.direction.y, line.direction.x, 0.0);
+
+        var direction = _this2._vertices[b].subtract(_this2._vertices[a]);
+
+        var orthogonal = new _vector.Vector(-direction.y, direction.x, 0.0);
         orthogonal = orthogonal.normalize();
         var customBoundsWidth = 10.0;
         var customBounds = [// 1st point
-        line.point.x + _this2._center.x + orthogonal.x * customBoundsWidth, line.point.y + _this2._center.y + orthogonal.y * customBoundsWidth, // 2nd point
-        _this2._centralPolygon.points[edgeIndex].x + _this2._center.x + orthogonal.x * customBoundsWidth, _this2._centralPolygon.points[edgeIndex].y + _this2._center.y + orthogonal.y * customBoundsWidth, // 3rd point
-        _this2._centralPolygon.points[edgeIndex].x + _this2._center.x - orthogonal.x * customBoundsWidth, _this2._centralPolygon.points[edgeIndex].y + _this2._center.y - orthogonal.y * customBoundsWidth, // 4th point
-        line.point.x + _this2._center.x - orthogonal.x * customBoundsWidth, line.point.y + _this2._center.y - orthogonal.y * customBoundsWidth]; //this.svg.mousedown(this.onMouseDown.bind(this));
+        _this2._vertices[a].x + _this2._center.x + orthogonal.x * customBoundsWidth, _this2._vertices[a].y + _this2._center.y + orthogonal.y * customBoundsWidth, // 2nd point
+        _this2._vertices[b].x + _this2._center.x + orthogonal.x * customBoundsWidth, _this2._vertices[b].y + _this2._center.y + orthogonal.y * customBoundsWidth, // 3rd point
+        _this2._vertices[b].x + _this2._center.x - orthogonal.x * customBoundsWidth, _this2._vertices[b].y + _this2._center.y - orthogonal.y * customBoundsWidth, // 4th point
+        _this2._vertices[a].x + _this2._center.x - orthogonal.x * customBoundsWidth, _this2._vertices[a].y + _this2._center.y - orthogonal.y * customBoundsWidth]; //this.svg.mousedown(this.onMouseDown.bind(this));
 
-        pleatGraphics.hitArea = new PIXI.Polygon(customBounds);
+        edgeGraphics.hitArea = new PIXI.Polygon(customBounds);
 
         function onDragStart(event) {
           this.alpha = 0.25; // Draw the bounds of this line
 
           this.drawPolygon(this.hitArea); // Reverse the crease assignment
 
-          this.owner._pleatAssignments[this.index] = this.owner._pleatAssignments[this.index] === "M" ? "V" : "M";
+          this.owner._assignments[this.index] = this.owner._assignments[this.index] === "M" ? "V" : "M";
         }
 
         function onDragEnd() {
+          // Trigger a re-draw call
           this.alpha = 1.0;
           this.owner.render();
-        } // Assign custom properties - we need to be able to trigger a re-draw if one 
+        } // Assign custom properties - we need to be able to trigger a re-draw if one
         // of the pleats is clicked
 
 
-        pleatGraphics.index = index;
-        pleatGraphics.owner = _this2; // Make this pleat interactive
+        edgeGraphics.index = edgeIndex;
+        edgeGraphics.owner = _this2; // Make this pleat interactive
 
-        pleatGraphics.interactive = true;
-        pleatGraphics.buttonMode = true;
-        pleatGraphics.on("pointerdown", onDragStart).on("pointerup", onDragEnd).on("pointerupoutside", onDragEnd);
+        edgeGraphics.interactive = true;
+        edgeGraphics.buttonMode = true;
+        edgeGraphics.on("pointerdown", onDragStart).on("pointerup", onDragEnd).on("pointerupoutside", onDragEnd);
 
-        _this2._graphics.addChild(pleatGraphics);
+        _this2._graphics.addChild(edgeGraphics);
       }); // Scale up everything and draw it at the center of the canvas
       //const drawScale = 200.0;
       //this._graphics.x = this._center.x;
