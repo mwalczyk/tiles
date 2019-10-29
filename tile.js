@@ -92,9 +92,11 @@ export class Tile {
 				window.app.renderer.view.height
 			) * 0.2;
 
+		// First, create the tile polygon
 		this._tilePolygon = Polygon.regular(radius, this._n);
 
-		// A rotation matrix to rotate each edge of the tile polygon by `tau`
+		// Then, construct a rotation matrix to rotate each edge of the tile polygon 
+		// by tilt angle `tau`
 		const transform = Matrix.rotationZ(this._tau);
 
 		this._edgePoints = []; // The points along the edges of the tile polygon from which the pleats will emanate
@@ -134,6 +136,11 @@ export class Tile {
 			this._pleatAssignments.push("M", "V");
 		}
 
+
+
+
+
+
 		// Calculate the points along the tile polygon's edges from which each
 		// of the inner pleats will emanate
 		let centralPolygonPoints = [];
@@ -146,56 +153,94 @@ export class Tile {
 			centralPolygonPoints.push(b.intersect(c));
 		}
 
+
+
 		// Remove the last two lines, as they are duplicates of the first two
 		this._pleatLines.pop();
 		this._pleatLines.pop();
 		this._centralPolygon = new Polygon(centralPolygonPoints);
+
+
+		this._pleatLines.forEach((line, index) => {
+			// Construct edge indices
+			let edgeIndex = Math.floor(index / 2);
+
+			if (index % 2 === 0) {
+				edgeIndex -= 1;
+
+				// Wrap around
+				if (edgeIndex < 0) {
+					edgeIndex = this._centralPolygon.points.length - 1;
+				}
+			}
+
+			// This pleat connects to:
+			this._centralPolygon.points[edgeIndex];
+
+			// Alternate M and V assignments
+
+		});
+
 	}
 
 	render() {
-		this._graphics.removeChildren();
-		this._graphics.clear();
-
 		const tan = 0xb5a6a5;
 		const red = 0xbf3054;
 		const mountain = 0xbd5e51;
 		const valley = 0x3259a8;
 
-		// Draw the tile polygon
-		this._graphics.lineStyle(4, tan);
-		this._graphics.beginFill(tan, 0.25);
-		this._graphics.drawPolygon(
-			this._tilePolygon.points
-				.map(point => {
-					return [point.x + this._center.x, point.y + this._center.y];
-				})
-				.flat()
-		);
-		this._graphics.endFill();
+		this._graphics.removeChildren();
+		this._graphics.clear();
 
-		// Draw the vertices of the tile polygon
-		this._graphics.lineStyle(0);
-		this._graphics.beginFill(red, 0.25);
-		this._tilePolygon.points.forEach(point =>
-			this._graphics.drawCircle(
-				point.x + this._center.x,
-				point.y + this._center.y,
-				3.0
-			)
-		);
-		this._graphics.endFill();
+		{
+			// Draw the tile polygon
+			this._graphics.lineStyle(4, tan);
+			this._graphics.beginFill(tan, 0.25);
+			this._graphics.drawPolygon(
+				this._tilePolygon.points
+					.map(point => {
+						return [point.x + this._center.x, point.y + this._center.y];
+					})
+					.flat()
+			);
+			this._graphics.endFill();
 
-		// Draw the central polygon
-		this._graphics.lineStyle(2, mountain);
-		this._graphics.beginFill(tan, 0.25);
-		this._graphics.drawPolygon(
-			this._centralPolygon.points
-				.map(point => {
-					return [point.x + this._center.x, point.y + this._center.y];
-				})
-				.flat()
-		);
-		this._graphics.endFill();
+			// Draw the vertices of the tile polygon
+			this._graphics.lineStyle(0);
+			this._graphics.beginFill(red, 0.25);
+			this._tilePolygon.points.forEach(point =>
+				this._graphics.drawCircle(
+					point.x + this._center.x,
+					point.y + this._center.y,
+					3.0
+				)
+			);
+			this._graphics.endFill();
+
+			// Draw the central polygon
+			this._graphics.lineStyle(2, mountain);
+			this._graphics.beginFill(tan, 0.25);
+			this._graphics.drawPolygon(
+				this._centralPolygon.points
+					.map(point => {
+						return [point.x + this._center.x, point.y + this._center.y];
+					})
+					.flat()
+			);
+			this._graphics.endFill();
+
+			// Draw the points along tile polygon edge's where the pleats intersect
+			this._graphics.lineStyle(0);
+			this._graphics.beginFill(red);
+			this._edgePoints.forEach(point =>
+				this._graphics.drawCircle(
+					point.x + this._center.x,
+					point.y + this._center.y,
+					3.0
+				)
+			);
+			this._graphics.endFill();
+		}
 
 		// Draw the pleats
 		this._pleatLines.forEach((line, index) => {
@@ -300,18 +345,6 @@ export class Tile {
 
 			this._graphics.addChild(pleatGraphics);
 		});
-
-		// Draw the points along tile polygon edge's where the pleats intersect
-		this._graphics.lineStyle(0);
-		this._graphics.beginFill(red);
-		this._edgePoints.forEach(point =>
-			this._graphics.drawCircle(
-				point.x + this._center.x,
-				point.y + this._center.y,
-				3.0
-			)
-		);
-		this._graphics.endFill();
 
 		// Scale up everything and draw it at the center of the canvas
 		//const drawScale = 200.0;
