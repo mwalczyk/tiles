@@ -213,18 +213,6 @@ export class Tile {
 			);
 			tileGraphics.endFill();
 
-			// Draw the vertices of the tile polygon
-			tileGraphics.lineStyle(0);
-			tileGraphics.beginFill(tan);
-			this._tilePolygon.points.forEach(point =>
-				tileGraphics.drawCircle(
-					point.x + this._center.x,
-					point.y + this._center.y,
-					5.0
-				)
-			);
-			tileGraphics.endFill();
-
 			// Draw the central polygon - do not draw stroked, as the creases
 			// will be drawn separately below
 			tileGraphics.lineStyle(0);
@@ -250,43 +238,46 @@ export class Tile {
 				vertexGraphics.drawCircle(
 					vertex.x + this._center.x,
 					vertex.y + this._center.y,
-					4.0
+					3.0
 				);
 				vertexGraphics.endFill();
 
-				function onDragStart(event) {
-					this.alpha = 0.25;
-					this.children.forEach(child => (child.visible = true));
-				}
-
-				function onDragEnd() {
-					this.alpha = 1.0;
-					this.children.forEach(child => (child.visible = false));
-				}
-
+				// Add interactivity to this vertex: when the user mouses over it, 
+				// display some information 
+				vertexGraphics.hitArea = new PIXI.Circle(vertex.x + this._center.x, vertex.y + this._center.y, 6.0);
 				vertexGraphics.index = index;
 				vertexGraphics.owner = this;
 				vertexGraphics.interactive = true;
 				vertexGraphics.buttonMode = true;
 				vertexGraphics.zIndex = 1;
-				vertexGraphics
-					.on("pointerdown", onDragStart)
-					.on("pointerup", onDragEnd)
-					.on("pointerupoutside", onDragEnd);
+
+				vertexGraphics.mouseover = function() {
+				  //this.alpha = 0.25;
+					this.children.forEach(child => (child.visible = true));
+				}
+				vertexGraphics.mouseout = function() {
+				  this.alpha = 1.0;
+					this.children.forEach(child => (child.visible = false));
+				}
 
 				const style = new PIXI.TextStyle({
-					fontFamily: "Courier New",
-					fontWeight: "bold",
-					fontSize: 16,
-					fill: 0x000000
+					fontFamily: "Arial",
+					fontSize: 10,
+					fill: 0xd7dcde
 				});
 
-				const label = new PIXI.Text(index.toString(), style);
-				label.x = vertex.x + this._center.x + 10.0;
-				label.y = vertex.y + this._center.y - 10.0;
-				label.visible = false;
+				const textSpacing = 10.0;
+				const text = new PIXI.Text(`Vertex ID: ${index}`, style);
+				let labelGraphics = new PIXI.Graphics();
+				labelGraphics.beginFill(valley);
+				labelGraphics.drawRect(0.0, 0.0, text.width, text.height);
+				labelGraphics.x = vertex.x + this._center.x + textSpacing;
+				labelGraphics.y = vertex.y + this._center.y - textSpacing;
+				labelGraphics.endFill();
+				labelGraphics.visible = false;
+				labelGraphics.addChild(text);
 
-				vertexGraphics.addChild(label);
+				vertexGraphics.addChild(labelGraphics);
 
 				this._graphics.addChild(vertexGraphics);
 			});

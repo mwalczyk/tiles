@@ -45322,15 +45322,6 @@ function () {
         tileGraphics.drawPolygon(this._tilePolygon.points.map(function (point) {
           return [point.x + _this2._center.x, point.y + _this2._center.y];
         }).flat());
-        tileGraphics.endFill(); // Draw the vertices of the tile polygon
-
-        tileGraphics.lineStyle(0);
-        tileGraphics.beginFill(tan);
-
-        this._tilePolygon.points.forEach(function (point) {
-          return tileGraphics.drawCircle(point.x + _this2._center.x, point.y + _this2._center.y, 5.0);
-        });
-
         tileGraphics.endFill(); // Draw the central polygon - do not draw stroked, as the creases
         // will be drawn separately below
 
@@ -45349,40 +45340,47 @@ function () {
           var vertexGraphics = new PIXI.Graphics();
           vertexGraphics.lineStyle(0);
           vertexGraphics.beginFill(red);
-          vertexGraphics.drawCircle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 4.0);
-          vertexGraphics.endFill();
+          vertexGraphics.drawCircle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 3.0);
+          vertexGraphics.endFill(); // Add interactivity to this vertex: when the user mouses over it, 
+          // display some information 
 
-          function onDragStart(event) {
-            this.alpha = 0.25;
-            this.children.forEach(function (child) {
-              return child.visible = true;
-            });
-          }
-
-          function onDragEnd() {
-            this.alpha = 1.0;
-            this.children.forEach(function (child) {
-              return child.visible = false;
-            });
-          }
-
+          vertexGraphics.hitArea = new PIXI.Circle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 6.0);
           vertexGraphics.index = index;
           vertexGraphics.owner = _this2;
           vertexGraphics.interactive = true;
           vertexGraphics.buttonMode = true;
           vertexGraphics.zIndex = 1;
-          vertexGraphics.on("pointerdown", onDragStart).on("pointerup", onDragEnd).on("pointerupoutside", onDragEnd);
+
+          vertexGraphics.mouseover = function () {
+            //this.alpha = 0.25;
+            this.children.forEach(function (child) {
+              return child.visible = true;
+            });
+          };
+
+          vertexGraphics.mouseout = function () {
+            this.alpha = 1.0;
+            this.children.forEach(function (child) {
+              return child.visible = false;
+            });
+          };
+
           var style = new PIXI.TextStyle({
-            fontFamily: "Courier New",
-            fontWeight: "bold",
-            fontSize: 16,
-            fill: 0x000000
+            fontFamily: "Arial",
+            fontSize: 10,
+            fill: 0xd7dcde
           });
-          var label = new PIXI.Text(index.toString(), style);
-          label.x = vertex.x + _this2._center.x + 10.0;
-          label.y = vertex.y + _this2._center.y - 10.0;
-          label.visible = false;
-          vertexGraphics.addChild(label);
+          var textSpacing = 10.0;
+          var text = new PIXI.Text("Vertex ID: ".concat(index), style);
+          var labelGraphics = new PIXI.Graphics();
+          labelGraphics.beginFill(valley);
+          labelGraphics.drawRect(0.0, 0.0, text.width, text.height);
+          labelGraphics.x = vertex.x + _this2._center.x + textSpacing;
+          labelGraphics.y = vertex.y + _this2._center.y - textSpacing;
+          labelGraphics.endFill();
+          labelGraphics.visible = false;
+          labelGraphics.addChild(text);
+          vertexGraphics.addChild(labelGraphics);
 
           _this2._graphics.addChild(vertexGraphics);
         });
