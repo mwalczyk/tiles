@@ -47,30 +47,34 @@ const inputTau = document.getElementById("input_tau");
 const inputN = document.getElementById("input_n");
 const pCurrentTwistAngle = document.getElementById("p_current_twist_angle");
 const pSafeTwistAngle = document.getElementById("p_safe_twist_angle");
-inputW.addEventListener("input", redraw);
-inputTau.addEventListener("input", redraw);
-inputN.addEventListener("input", redraw);
+inputW.addEventListener("input", update);
+inputTau.addEventListener("input", update);
+inputN.addEventListener("input", update);
 
 const tile = new Tile();
 
-function redraw(e) {
+function update(e) {
+	const old = tile.n;
+
 	// Set tile parameters
 	tile.w = parseFloat(inputW.value);
 	tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);
+	tile.n = parseInt(inputN.value);
 
-	if (parseInt(inputN.value) !== tile.n) {
-		tile.n = parseInt(inputN.value);
-		
+	tile.buildVertices();
+
+	// We only need to rebuild the edges and crease assignments if the number of sides
+	// changes - we want to avoid this, since it erases all of the edits that the user
+	// has made to the tile 
+	if (old !== tile.n) {
+		tile.buildEdgesAndAssignments();
 	}
 	
-
 	pCurrentTwistAngle.innerHTML = `Current twist angle: ${(tile.alpha * (180.0 / Math.PI)).toFixed(2)} Degrees`;
 	pSafeTwistAngle.innerHTML = `Safe twist angle: ${(tile.alphaSafe * (180.0 / Math.PI)).toFixed(2)} Degrees`;
 
-	// Rebuild tile geometry and graphics objects
-	tile.recalculate();
 	tile.render();
 }
 
 // Call this once to kick off the app
-redraw();
+update();

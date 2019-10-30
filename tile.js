@@ -32,8 +32,8 @@ export class Tile {
 			0.0
 		);
 
-		//this.update();
-		this.recalculate();
+		this.buildVertices();
+		this.buildEdgesAndAssignments();
 		this.render();
 	}
 
@@ -87,7 +87,7 @@ export class Tile {
 		return true;
 	}
 
-	recalculate() {
+	buildVertices() {
 		const radius =
 			Math.min(
 				window.app.renderer.view.width,
@@ -151,8 +151,7 @@ export class Tile {
 		// Now, construct the vertices, edges, and assignments that will form this
 		// tile's crease pattern
 		this._vertices = [];
-		this._edges = [];
-		this._assignments = [];
+
 
 		pleatLines.forEach((line, index) => {
 			// The index of the edge of the tile polygon from which this pleat emanates
@@ -168,28 +167,44 @@ export class Tile {
 				}
 			}
 
-			const expectedVertexCount = this._n + this._n * 2;
-
+			// We do this so that vertices aren't added twice
 			if (index % 2 === 0) {
-				this._vertices.push(line.point, this._centralPolygon.points[edgeIndex]);
-				this._edges.push([this._vertices.length - 2, this._vertices.length - 1]);
-				this._assignments.push("M");
+				this._vertices.push(this._centralPolygon.points[edgeIndex], line.point);
 			} else {
 				this._vertices.push(line.point);
-				this._edges.push([this._vertices.length - 1, (this._vertices.length + 1) % expectedVertexCount]);
-				this._assignments.push("V");
-
-				// The crease along the central polygon
-				this._edges.push([(this._vertices.length + 1) % expectedVertexCount, this._vertices.length - 2]);
-				this._assignments.push("M");
 			}
 		});
 	}
 
 	buildEdgesAndAssignments() {
-		
+		this._edges = [];
+		this._assignments = [];	
+
+		// Vertices are numbered around each pleat as follows:
+		//
+		//     -----------  
+		//     | CENTRAL |
+		//		 | POLYGON |
+		//     3---------0
+		//    /					/
+		//   /				 /
+		//  2         1
+		// 
+		for (let i = 0; i < this._n; i++) {
+			// The first pleat crease
+			this._edges.push([(i * 3) + 0, (i * 3) + 1]);
+			this._assignments.push("M");
+
+			// The second pleat crease
+			this._edges.push([(i * 3) + 2, ((i * 3) + 3) % this._vertices.length]);
+			this._assignments.push("V");
+
+			// The crease along the central polygon
+			this._edges.push([(i * 3) + 0, ((i * 3) + 3) % this._vertices.length]);
+			this._assignments.push("M");
+		}
 	}
-	
+
 	render() {
 		const tan = 0xb5a6a5;
 		const red = 0xbf3054;
@@ -384,11 +399,6 @@ export class Tile {
 		//this._graphics.scale.set(drawScale);
 
 		window.app.stage.addChild(this._graphics);
-	}
-
-	update() {
-		this.recalculate();
-		this.render();
 	}
 
 	validate() {}

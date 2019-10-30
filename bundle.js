@@ -1780,29 +1780,32 @@ var inputTau = document.getElementById("input_tau");
 var inputN = document.getElementById("input_n");
 var pCurrentTwistAngle = document.getElementById("p_current_twist_angle");
 var pSafeTwistAngle = document.getElementById("p_safe_twist_angle");
-inputW.addEventListener("input", redraw);
-inputTau.addEventListener("input", redraw);
-inputN.addEventListener("input", redraw);
+inputW.addEventListener("input", update);
+inputTau.addEventListener("input", update);
+inputN.addEventListener("input", update);
 var tile = new _tile.Tile();
 
-function redraw(e) {
-  // Set tile parameters
+function update(e) {
+  var old = tile.n; // Set tile parameters
+
   tile.w = parseFloat(inputW.value);
   tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);
+  tile.n = parseInt(inputN.value);
+  tile.buildVertices(); // We only need to rebuild the edges and crease assignments if the number of sides
+  // changes - we want to avoid this, since it erases all of the edits that the user
+  // has made to the tile 
 
-  if (parseInt(inputN.value) !== tile.n) {
-    tile.n = parseInt(inputN.value);
+  if (old !== tile.n) {
+    tile.buildEdgesAndAssignments();
   }
 
   pCurrentTwistAngle.innerHTML = "Current twist angle: ".concat((tile.alpha * (180.0 / Math.PI)).toFixed(2), " Degrees");
-  pSafeTwistAngle.innerHTML = "Safe twist angle: ".concat((tile.alphaSafe * (180.0 / Math.PI)).toFixed(2), " Degrees"); // Rebuild tile geometry and graphics objects
-
-  tile.recalculate();
+  pSafeTwistAngle.innerHTML = "Safe twist angle: ".concat((tile.alphaSafe * (180.0 / Math.PI)).toFixed(2), " Degrees");
   tile.render();
 } // Call this once to kick off the app
 
 
-redraw();
+update();
 
 },{"./src/vector":57,"./tile":58,"pixi.js":51}],10:[function(require,module,exports){
 /*!
@@ -44689,27 +44692,19 @@ function () {
     key: "intersect",
     value: function intersect(other) {
       // Reference: http://www.songho.ca/math/line/line.html#intersect_lineline
-      var p = this.point; // P1
+      var p = this.point;
+      var v = this.direction;
+      var q = other.point;
+      var u = other.direction;
+      var a = v.cross(u); // If `v`` and `u`` are parallel, then there is no intersection
 
-      var v = this.direction; // v
-
-      var q = other.point; // Q1
-
-      var u = other.direction; // u
-      // find a = v x u
-
-      var a = v.cross(u); // cross product
-      // if v and u are parallel, then no intersection, return NaN point
-
-      if (a.x == 0 && a.y == 0 && a.z == 0) return new _vector.Vector(NAN, NAN, NAN); // find b = (Q1-P1) x u
-
-      var b = q.subtract(p).cross(u); // cross product
-      // find t = b/a = (Q1-P1) x u / (v x u)
+      if (a.x == 0 && a.y == 0 && a.z == 0) return new _vector.Vector(NAN, NAN, NAN);
+      var b = q.subtract(p).cross(u); // Find `t = b/a = (Q1-P1) x u / (v x u)`
 
       var t = 0;
-      if (a.x != 0) t = b.x / a.x;else if (a.y != 0) t = b.y / a.y;else if (a.z != 0) t = b.z / a.z; // find intersection point
+      if (a.x != 0) t = b.x / a.x;else if (a.y != 0) t = b.y / a.y;else if (a.z != 0) t = b.z / a.z; // Find the intersection point
 
-      var point = p.addDisplacement(v.multiplyScalar(t)); // substitute t to line1
+      var point = p.addDisplacement(v.multiplyScalar(t)); // Substitute `t` into the first line equation
 
       return point;
     }
@@ -45200,15 +45195,15 @@ function () {
 
     this._graphics = new PIXI.Graphics(); // Where this tile will be centered within the app's canvas
 
-    this._center = new _point.Point(window.app.renderer.view.width * 0.25, window.app.renderer.view.height * 0.25, 0.0); //this.update();
-
-    this.recalculate();
+    this._center = new _point.Point(window.app.renderer.view.width * 0.25, window.app.renderer.view.height * 0.25, 0.0);
+    this.buildVertices();
+    this.buildEdgesAndAssignments();
     this.render();
   }
 
   _createClass(Tile, [{
-    key: "recalculate",
-    value: function recalculate() {
+    key: "buildVertices",
+    value: function buildVertices() {
       var _this = this;
 
       var radius = Math.min(window.app.renderer.view.width, window.app.renderer.view.height) * 0.2; // First, create the tile polygon
@@ -45262,8 +45257,6 @@ function () {
       // tile's crease pattern
 
       this._vertices = [];
-      this._edges = [];
-      this._assignments = [];
       pleatLines.forEach(function (line, index) {
         // The index of the edge of the tile polygon from which this pleat emanates
         var edgeIndex = Math.floor(index / 2);
@@ -45277,33 +45270,48 @@ function () {
           if (edgeIndex < 0) {
             edgeIndex = _this._centralPolygon.points.length - 1;
           }
-        }
+        } // We do this so that vertices aren't added twice
 
-        var expectedVertexCount = _this._n + _this._n * 2;
 
         if (index % 2 === 0) {
-          _this._vertices.push(line.point, _this._centralPolygon.points[edgeIndex]);
-
-          _this._edges.push([_this._vertices.length - 2, _this._vertices.length - 1]);
-
-          _this._assignments.push("M");
+          _this._vertices.push(_this._centralPolygon.points[edgeIndex], line.point);
         } else {
           _this._vertices.push(line.point);
-
-          _this._edges.push([_this._vertices.length - 1, (_this._vertices.length + 1) % expectedVertexCount]);
-
-          _this._assignments.push("V"); // The crease along the central polygon
-
-
-          _this._edges.push([(_this._vertices.length + 1) % expectedVertexCount, _this._vertices.length - 2]);
-
-          _this._assignments.push("M");
         }
       });
     }
   }, {
     key: "buildEdgesAndAssignments",
-    value: function buildEdgesAndAssignments() {}
+    value: function buildEdgesAndAssignments() {
+      this._edges = [];
+      this._assignments = []; // Vertices are numbered around each pleat as follows:
+      //
+      //     -----------  
+      //     | CENTRAL |
+      //		 | POLYGON |
+      //     3---------0
+      //    /					/
+      //   /				 /
+      //  2         1
+      // 
+
+      for (var i = 0; i < this._n; i++) {
+        // The first pleat crease
+        this._edges.push([i * 3 + 0, i * 3 + 1]);
+
+        this._assignments.push("M"); // The second pleat crease
+
+
+        this._edges.push([i * 3 + 2, (i * 3 + 3) % this._vertices.length]);
+
+        this._assignments.push("V"); // The crease along the central polygon
+
+
+        this._edges.push([i * 3 + 0, (i * 3 + 3) % this._vertices.length]);
+
+        this._assignments.push("M");
+      }
+    }
   }, {
     key: "render",
     value: function render() {
@@ -45456,12 +45464,6 @@ function () {
 
 
       window.app.stage.addChild(this._graphics);
-    }
-  }, {
-    key: "update",
-    value: function update() {
-      this.recalculate();
-      this.render();
     }
   }, {
     key: "validate",

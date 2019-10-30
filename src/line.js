@@ -68,28 +68,27 @@ export class Line {
 
 	intersect(other) {
 		// Reference: http://www.songho.ca/math/line/line.html#intersect_lineline
-		const p = this.point; // P1
-		const v = this.direction; // v
-		const q = other.point; // Q1
-		const u = other.direction; // u
+		const p = this.point;  
+		const v = this.direction;  		
+		const q = other.point;  
+		const u = other.direction;  
 
-		// find a = v x u
-		const a = v.cross(u); // cross product
+		const a = v.cross(u);
 
-		// if v and u are parallel, then no intersection, return NaN point
+		// If `v`` and `u`` are parallel, then there is no intersection
 		if (a.x == 0 && a.y == 0 && a.z == 0) return new Vector(NAN, NAN, NAN);
 
-		// find b = (Q1-P1) x u
-		const b = q.subtract(p).cross(u); // cross product
+		const b = q.subtract(p).cross(u); 
 
-		// find t = b/a = (Q1-P1) x u / (v x u)
+		// Find `t = b/a = (Q1-P1) x u / (v x u)`
 		let t = 0;
 		if (a.x != 0) t = b.x / a.x;
 		else if (a.y != 0) t = b.y / a.y;
 		else if (a.z != 0) t = b.z / a.z;
 
-		// find intersection point
-		const point = p.addDisplacement(v.multiplyScalar(t)); // substitute t to line1
+		// Find the intersection point
+		const point = p.addDisplacement(v.multiplyScalar(t)); // Substitute `t` into the first line equation
+
 		return point;
 	}
 }
