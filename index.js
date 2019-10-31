@@ -1,9 +1,10 @@
 import * as PIXI from "pixi.js";
 
+import { Point } from "./src/point";
 import { Tile } from "./tile";
 import { Vector } from "./src/vector";
 
-PIXI.Graphics.prototype.dashedLineTo = function(toX, toY, dash = 2, gap = 2) {
+PIXI.Graphics.prototype.dashedLineTo = function(toX, toY, dash=2, gap=2) {
 	const lastPosition = this.currentPath.points;
 
 	let to = new Vector(toX, toY, 0.0);
@@ -33,11 +34,13 @@ PIXI.Graphics.prototype.dashedLineTo = function(toX, toY, dash = 2, gap = 2) {
 const lightBlue = 0xd7dcde;
 let app = new PIXI.Application({
 	width: 512,
-	height: 512,
+	height: 720,
 	antialias: true,
-	resolution: 2
+	resolution: 1
 });
 app.renderer.backgroundColor = lightBlue;
+app.renderer.view.width = 512;
+app.renderer.view.width = 720;
 
 document.body.appendChild(app.view);
 window.app = app;
@@ -51,29 +54,59 @@ inputW.addEventListener("input", update);
 inputTau.addEventListener("input", update);
 inputN.addEventListener("input", update);
 
-const tile = new Tile();
+let windowCenter = new Point(
+	window.app.renderer.view.width * 0.5,
+	window.app.renderer.view.height * 0.5,
+	0.0);
 
-function update(e) {
-	const old = tile.n;
+const tiles = [];
+// tiles.push(new Tile(center, 70.0));
 
-	// Set tile parameters
-	tile.w = parseFloat(inputW.value);
-	tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);
-	tile.n = parseInt(inputN.value);
+const rows = 8;
+const cols = 4;
+const radius = 70.0;
+for (let i = 0; i < rows; i++) {
+	for (let j = 0; j < cols; j++) {
 
-	tile.buildVertices();
+		const xOffset = radius * j * 2 - (radius * (cols - 0.5));
+		const yOffset = radius * i * 1 - (radius * (rows - 0.5)) * 0.5;
 
-	// We only need to rebuild the edges and crease assignments if the number of sides
-	// changes - we want to avoid this, since it erases all of the edits that the user
-	// has made to the tile 
-	if (old !== tile.n) {
-		tile.buildEdgesAndAssignments();
+		if (i % 2 === 0 && rows > 1) {
+			xOffset += radius;
+		}
+
+		const center = windowCenter.addDisplacement(new Vector(xOffset, yOffset, 0.0))
+		tiles.push(new Tile(center, radius));
+
 	}
-	
-	pCurrentTwistAngle.innerHTML = `Current twist angle: ${(tile.alpha * (180.0 / Math.PI)).toFixed(2)} Degrees`;
-	pSafeTwistAngle.innerHTML = `Safe twist angle: ${(tile.alphaSafe * (180.0 / Math.PI)).toFixed(2)} Degrees`;
+}
+function update(e) {
+	tiles.forEach((tile, index) => {
+		const old = tile.n;
 
-	tile.render();
+		const percent = index / tiles.length;
+		console.log(percent);
+
+		// Set tile parameters
+		tile.w = parseFloat(inputW.value);
+		tile.tau = parseFloat(inputTau.value)  * percent * (Math.PI / 180.0);
+		tile.n = parseInt(inputN.value);
+
+		tile.buildVertices();
+
+		// We only need to rebuild the edges and crease assignments if the number of sides
+		// changes - we want to avoid this, since it erases all of the edits that the user
+		// has made to the tile 
+		if (old !== tile.n) {
+			tile.buildEdgesAndAssignments();
+		}
+		
+		pCurrentTwistAngle.innerHTML = `Current twist angle: ${(tile.alpha * (180.0 / Math.PI)).toFixed(2)} Degrees`;
+		pSafeTwistAngle.innerHTML = `Safe twist angle: ${(tile.alphaSafe * (180.0 / Math.PI)).toFixed(2)} Degrees`;
+
+		tile.render();
+	});
+
 }
 
 // Call this once to kick off the app

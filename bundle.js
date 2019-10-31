@@ -1736,6 +1736,8 @@ module.exports = {
 
 var PIXI = _interopRequireWildcard(require("pixi.js"));
 
+var _point = require("./src/point");
+
 var _tile = require("./tile");
 
 var _vector = require("./src/vector");
@@ -1768,11 +1770,13 @@ PIXI.Graphics.prototype.dashedLineTo = function (toX, toY) {
 var lightBlue = 0xd7dcde;
 var app = new PIXI.Application({
   width: 512,
-  height: 512,
+  height: 720,
   antialias: true,
-  resolution: 2
+  resolution: 1
 });
 app.renderer.backgroundColor = lightBlue;
+app.renderer.view.width = 512;
+app.renderer.view.width = 720;
 document.body.appendChild(app.view);
 window.app = app;
 var inputW = document.getElementById("input_w");
@@ -1783,31 +1787,54 @@ var pSafeTwistAngle = document.getElementById("p_safe_twist_angle");
 inputW.addEventListener("input", update);
 inputTau.addEventListener("input", update);
 inputN.addEventListener("input", update);
-var tile = new _tile.Tile();
+var windowCenter = new _point.Point(window.app.renderer.view.width * 0.5, window.app.renderer.view.height * 0.5, 0.0);
+var tiles = []; // tiles.push(new Tile(center, 70.0));
+
+var rows = 8;
+var cols = 4;
+var radius = 70.0;
+
+for (var i = 0; i < rows; i++) {
+  for (var j = 0; j < cols; j++) {
+    var xOffset = radius * j * 2 - radius * (cols - 0.5);
+    var yOffset = radius * i * 1 - radius * (rows - 0.5) * 0.5;
+
+    if (i % 2 === 0 && rows > 1) {
+      xOffset += radius;
+    }
+
+    var center = windowCenter.addDisplacement(new _vector.Vector(xOffset, yOffset, 0.0));
+    tiles.push(new _tile.Tile(center, radius));
+  }
+}
 
 function update(e) {
-  var old = tile.n; // Set tile parameters
+  tiles.forEach(function (tile, index) {
+    var old = tile.n;
+    var percent = index / tiles.length;
+    console.log(percent); // Set tile parameters
 
-  tile.w = parseFloat(inputW.value);
-  tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);
-  tile.n = parseInt(inputN.value);
-  tile.buildVertices(); // We only need to rebuild the edges and crease assignments if the number of sides
-  // changes - we want to avoid this, since it erases all of the edits that the user
-  // has made to the tile 
+    tile.w = parseFloat(inputW.value);
+    tile.tau = parseFloat(inputTau.value) * percent * (Math.PI / 180.0);
+    tile.n = parseInt(inputN.value);
+    tile.buildVertices(); // We only need to rebuild the edges and crease assignments if the number of sides
+    // changes - we want to avoid this, since it erases all of the edits that the user
+    // has made to the tile 
 
-  if (old !== tile.n) {
-    tile.buildEdgesAndAssignments();
-  }
+    if (old !== tile.n) {
+      tile.buildEdgesAndAssignments();
+    }
 
-  pCurrentTwistAngle.innerHTML = "Current twist angle: ".concat((tile.alpha * (180.0 / Math.PI)).toFixed(2), " Degrees");
-  pSafeTwistAngle.innerHTML = "Safe twist angle: ".concat((tile.alphaSafe * (180.0 / Math.PI)).toFixed(2), " Degrees");
-  tile.render();
+    pCurrentTwistAngle.innerHTML = "Current twist angle: ".concat((tile.alpha * (180.0 / Math.PI)).toFixed(2), " Degrees");
+    pSafeTwistAngle.innerHTML = "Safe twist angle: ".concat((tile.alphaSafe * (180.0 / Math.PI)).toFixed(2), " Degrees");
+    tile.render();
+  });
 } // Call this once to kick off the app
 
 
 update();
 
-},{"./src/vector":57,"./tile":58,"pixi.js":51}],10:[function(require,module,exports){
+},{"./src/point":55,"./src/vector":57,"./tile":58,"pixi.js":51}],10:[function(require,module,exports){
 /*!
  * @pixi/accessibility - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -45183,19 +45210,20 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 var Tile =
 /*#__PURE__*/
 function () {
-  function Tile(w, tau) {
+  function Tile(center, radius) {
     _classCallCheck(this, Tile);
 
     // The segment width ratio along each of the tile polygon's edges
     this._w = 0.25; // The tilt angle of the twist
 
-    this._tau = tau; // The number of sides on both the tile polygon and the central polygon
+    this._tau = 120.0 * (Math.PI / 180.0); // The number of sides on both the tile polygon and the central polygon
 
     this._n = 4; // The PIXI graphics container
 
     this._graphics = new PIXI.Graphics(); // Where this tile will be centered within the app's canvas
 
-    this._center = new _point.Point(window.app.renderer.view.width * 0.25, window.app.renderer.view.height * 0.25, 0.0);
+    this._center = center;
+    this._radius = radius;
     this.buildVertices();
     this.buildEdgesAndAssignments();
     this.render();
@@ -45206,9 +45234,8 @@ function () {
     value: function buildVertices() {
       var _this = this;
 
-      var radius = Math.min(window.app.renderer.view.width, window.app.renderer.view.height) * 0.2; // First, create the tile polygon
-
-      this._tilePolygon = _polygon.Polygon.regular(radius, this._n); // Then, construct a rotation matrix to rotate each edge of the tile polygon
+      // First, create the tile polygon
+      this._tilePolygon = _polygon.Polygon.regular(this._radius, this._n); // Then, construct a rotation matrix to rotate each edge of the tile polygon
       // by tilt angle `tau`
 
       var transform = _matrix.Matrix.rotationZ(this._tau); // The (infinite) lines that run along each of the pleats
@@ -45330,7 +45357,7 @@ function () {
       {
         var tileGraphics = new PIXI.Graphics(); // Draw the tile polygon
 
-        tileGraphics.lineStyle(4, tan);
+        tileGraphics.lineStyle(1, tan);
         tileGraphics.beginFill(tan, 0.25);
         tileGraphics.drawPolygon(this._tilePolygon.points.map(function (point) {
           return [point.x + _this2._center.x, point.y + _this2._center.y];
@@ -45347,52 +45374,57 @@ function () {
 
         this._graphics.addChild(tileGraphics);
       }
-      {
+
+      if (true) {
         // Draw the vertices of the crease pattern
         this._vertices.forEach(function (vertex, index) {
           var vertexGraphics = new PIXI.Graphics();
           vertexGraphics.lineStyle(0);
           vertexGraphics.beginFill(red);
           vertexGraphics.drawCircle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 3.0);
-          vertexGraphics.endFill(); // Add interactivity to this vertex: when the user mouses over it,
-          // display some information
+          vertexGraphics.endFill();
+          var useText = false;
 
-          vertexGraphics.hitArea = new PIXI.Circle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 12.0);
-          vertexGraphics.index = index;
-          vertexGraphics.owner = _this2;
-          vertexGraphics.interactive = true;
-          vertexGraphics.buttonMode = true;
-          vertexGraphics.zIndex = 1;
+          if (useText) {
+            // Add interactivity to this vertex: when the user mouses over it,
+            // display some information
+            vertexGraphics.hitArea = new PIXI.Circle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 12.0);
+            vertexGraphics.index = index;
+            vertexGraphics.owner = _this2;
+            vertexGraphics.interactive = true;
+            vertexGraphics.buttonMode = true;
+            vertexGraphics.zIndex = 1;
 
-          vertexGraphics.mouseover = function () {
-            this.children.forEach(function (child) {
-              return child.visible = true;
+            vertexGraphics.mouseover = function () {
+              this.children.forEach(function (child) {
+                return child.visible = true;
+              });
+            };
+
+            vertexGraphics.mouseout = function () {
+              this.children.forEach(function (child) {
+                return child.visible = false;
+              });
+            };
+
+            var style = new PIXI.TextStyle({
+              fontFamily: "Arial",
+              fontSize: 10,
+              fill: 0xd7dcde
             });
-          };
-
-          vertexGraphics.mouseout = function () {
-            this.children.forEach(function (child) {
-              return child.visible = false;
-            });
-          };
-
-          var style = new PIXI.TextStyle({
-            fontFamily: "Arial",
-            fontSize: 10,
-            fill: 0xd7dcde
-          });
-          var textSpacing = 10.0;
-          var text = new PIXI.Text("Vertex ID: ".concat(index), style);
-          var labelGraphics = new PIXI.Graphics();
-          labelGraphics.beginFill(valley);
-          labelGraphics.drawRect(0.0, 0.0, text.width, text.height);
-          labelGraphics.x = vertex.x + _this2._center.x + textSpacing;
-          labelGraphics.y = vertex.y + _this2._center.y - textSpacing;
-          labelGraphics.endFill();
-          labelGraphics.visible = false;
-          labelGraphics.zIndex = 2;
-          labelGraphics.addChild(text);
-          vertexGraphics.addChild(labelGraphics);
+            var textSpacing = 10.0;
+            var text = new PIXI.Text("Vertex ID: ".concat(index), style);
+            var labelGraphics = new PIXI.Graphics();
+            labelGraphics.beginFill(valley);
+            labelGraphics.drawRect(0.0, 0.0, text.width, text.height);
+            labelGraphics.x = vertex.x + _this2._center.x + textSpacing;
+            labelGraphics.y = vertex.y + _this2._center.y - textSpacing;
+            labelGraphics.endFill();
+            labelGraphics.visible = false;
+            labelGraphics.zIndex = 2;
+            labelGraphics.addChild(text);
+            vertexGraphics.addChild(labelGraphics);
+          }
 
           _this2._graphics.addChild(vertexGraphics);
         });
@@ -45415,7 +45447,7 @@ function () {
         } else {
           // Valley fold
           edgeGraphics.lineStyle(pleatLineStrokeSize, valley);
-          edgeGraphics.dashedLineTo(_this2._vertices[b].x + _this2._center.x, _this2._vertices[b].y + _this2._center.y);
+          edgeGraphics.dashedLineTo(_this2._vertices[b].x + _this2._center.x, _this2._vertices[b].y + _this2._center.y, 2.0, 2.0);
         } // A direction vector that runs parallel to this edge
 
 

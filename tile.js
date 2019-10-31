@@ -12,12 +12,12 @@ import { Vector } from "./src/vector";
  *
  */
 export class Tile {
-	constructor(w, tau) {
+	constructor(center, radius) {
 		// The segment width ratio along each of the tile polygon's edges
 		this._w = 0.25;
 
 		// The tilt angle of the twist
-		this._tau = tau;
+		this._tau = 120.0 * (Math.PI / 180.0);
 
 		// The number of sides on both the tile polygon and the central polygon
 		this._n = 4;
@@ -26,11 +26,9 @@ export class Tile {
 		this._graphics = new PIXI.Graphics();
 
 		// Where this tile will be centered within the app's canvas
-		this._center = new Point(
-			window.app.renderer.view.width * 0.25,
-			window.app.renderer.view.height * 0.25,
-			0.0
-		);
+		this._center = center;
+
+		this._radius = radius;
 
 		this.buildVertices();
 		this.buildEdgesAndAssignments();
@@ -88,14 +86,8 @@ export class Tile {
 	}
 
 	buildVertices() {
-		const radius =
-			Math.min(
-				window.app.renderer.view.width,
-				window.app.renderer.view.height
-			) * 0.2;
-
 		// First, create the tile polygon
-		this._tilePolygon = Polygon.regular(radius, this._n);
+		this._tilePolygon = Polygon.regular(this._radius, this._n);
 
 		// Then, construct a rotation matrix to rotate each edge of the tile polygon
 		// by tilt angle `tau`
@@ -219,7 +211,7 @@ export class Tile {
 			let tileGraphics = new PIXI.Graphics();
 
 			// Draw the tile polygon
-			tileGraphics.lineStyle(4, tan);
+			tileGraphics.lineStyle(1, tan);
 			tileGraphics.beginFill(tan, 0.25);
 			tileGraphics.drawPolygon(
 				this._tilePolygon.points
@@ -245,7 +237,7 @@ export class Tile {
 
 			this._graphics.addChild(tileGraphics);
 		}
-		{
+		if (true) {
 			// Draw the vertices of the crease pattern
 			this._vertices.forEach((vertex, index) => {
 				let vertexGraphics = new PIXI.Graphics();
@@ -259,45 +251,48 @@ export class Tile {
 				);
 				vertexGraphics.endFill();
 
-				// Add interactivity to this vertex: when the user mouses over it,
-				// display some information
-				vertexGraphics.hitArea = new PIXI.Circle(
-					vertex.x + this._center.x,
-					vertex.y + this._center.y,
-					12.0
-				);
-				vertexGraphics.index = index;
-				vertexGraphics.owner = this;
-				vertexGraphics.interactive = true;
-				vertexGraphics.buttonMode = true;
-				vertexGraphics.zIndex = 1;
+				const useText = false;
+				if (useText) {
+					// Add interactivity to this vertex: when the user mouses over it,
+					// display some information
+					vertexGraphics.hitArea = new PIXI.Circle(
+						vertex.x + this._center.x,
+						vertex.y + this._center.y,
+						12.0
+					);
+					vertexGraphics.index = index;
+					vertexGraphics.owner = this;
+					vertexGraphics.interactive = true;
+					vertexGraphics.buttonMode = true;
+					vertexGraphics.zIndex = 1;
 
-				vertexGraphics.mouseover = function() {
-					this.children.forEach(child => (child.visible = true));
-				};
-				vertexGraphics.mouseout = function() {
-					this.children.forEach(child => (child.visible = false));
-				};
+					vertexGraphics.mouseover = function() {
+						this.children.forEach(child => (child.visible = true));
+					};
+					vertexGraphics.mouseout = function() {
+						this.children.forEach(child => (child.visible = false));
+					};
 
-				const style = new PIXI.TextStyle({
-					fontFamily: "Arial",
-					fontSize: 10,
-					fill: 0xd7dcde
-				});
+					const style = new PIXI.TextStyle({
+						fontFamily: "Arial",
+						fontSize: 10,
+						fill: 0xd7dcde
+					});
 
-				const textSpacing = 10.0;
-				const text = new PIXI.Text(`Vertex ID: ${index}`, style);
-				let labelGraphics = new PIXI.Graphics();
-				labelGraphics.beginFill(valley);
-				labelGraphics.drawRect(0.0, 0.0, text.width, text.height);
-				labelGraphics.x = vertex.x + this._center.x + textSpacing;
-				labelGraphics.y = vertex.y + this._center.y - textSpacing;
-				labelGraphics.endFill();
-				labelGraphics.visible = false;
-				labelGraphics.zIndex = 2;
-				labelGraphics.addChild(text);
+					const textSpacing = 10.0;
+					const text = new PIXI.Text(`Vertex ID: ${index}`, style);
+					let labelGraphics = new PIXI.Graphics();
+					labelGraphics.beginFill(valley);
+					labelGraphics.drawRect(0.0, 0.0, text.width, text.height);
+					labelGraphics.x = vertex.x + this._center.x + textSpacing;
+					labelGraphics.y = vertex.y + this._center.y - textSpacing;
+					labelGraphics.endFill();
+					labelGraphics.visible = false;
+					labelGraphics.zIndex = 2;
+					labelGraphics.addChild(text);
 
-				vertexGraphics.addChild(labelGraphics);
+					vertexGraphics.addChild(labelGraphics);
+				}
 
 				this._graphics.addChild(vertexGraphics);
 			});
@@ -326,7 +321,8 @@ export class Tile {
 				edgeGraphics.lineStyle(pleatLineStrokeSize, valley);
 				edgeGraphics.dashedLineTo(
 					this._vertices[b].x + this._center.x,
-					this._vertices[b].y + this._center.y
+					this._vertices[b].y + this._center.y,
+					2.0, 2.0
 				);
 			}
 
