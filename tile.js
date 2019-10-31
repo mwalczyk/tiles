@@ -30,6 +30,8 @@ export class Tile {
 
 		this._radius = radius;
 
+		this._selected = false;
+
 		this.buildVertices();
 		this.buildEdgesAndAssignments();
 		this.render();
@@ -53,6 +55,10 @@ export class Tile {
 		this._n = n;
 	}
 
+	set selected(selected) {
+		this._selected = selected;
+	}
+
 	get w() {
 		return this._w;
 	}
@@ -65,10 +71,24 @@ export class Tile {
 		return this._n;
 	}
 
+	get selected() {
+		return this._selected;
+	}
+
+	get bounds() {
+		const flatPoints = this._tilePolygon.points.map(point => {
+				return [point.x + this._center.x, point.y + this._center.y];
+		}).flat();
+
+		const poly = new PIXI.Polygon(...flatPoints);
+		
+		return poly;
+	}
+
 	get alphaSafe() {
-		return this._n <= 6
-			? this._tilePolygon.interiorAngle
-			: this._tilePolygon.exteriorAngle;
+		// return this._n <= 6
+		// 	? this._tilePolygon.interiorAngle
+		// 	: this._tilePolygon.exteriorAngle;
 	}
 
 	get alpha() {
@@ -211,7 +231,12 @@ export class Tile {
 			let tileGraphics = new PIXI.Graphics();
 
 			// Draw the tile polygon
-			tileGraphics.lineStyle(1, tan);
+			if (this._selected) {
+				tileGraphics.lineStyle(3, tan);
+			} else {
+				tileGraphics.lineStyle(1, tan);
+			}
+			
 			tileGraphics.beginFill(tan, 0.25);
 			tileGraphics.drawPolygon(
 				this._tilePolygon.points
@@ -237,67 +262,66 @@ export class Tile {
 
 			this._graphics.addChild(tileGraphics);
 		}
-		if (true) {
-			// Draw the vertices of the crease pattern
-			this._vertices.forEach((vertex, index) => {
-				let vertexGraphics = new PIXI.Graphics();
 
-				vertexGraphics.lineStyle(0);
-				vertexGraphics.beginFill(red);
-				vertexGraphics.drawCircle(
+		// Draw the vertices of the crease pattern
+		this._vertices.forEach((vertex, index) => {
+			let vertexGraphics = new PIXI.Graphics();
+
+			vertexGraphics.lineStyle(0);
+			vertexGraphics.beginFill(red);
+			vertexGraphics.drawCircle(
+				vertex.x + this._center.x,
+				vertex.y + this._center.y,
+				3.0
+			);
+			vertexGraphics.endFill();
+
+			const useText = false;
+			if (useText) {
+				// Add interactivity to this vertex: when the user mouses over it,
+				// display some information
+				vertexGraphics.hitArea = new PIXI.Circle(
 					vertex.x + this._center.x,
 					vertex.y + this._center.y,
-					3.0
+					12.0
 				);
-				vertexGraphics.endFill();
+				vertexGraphics.index = index;
+				vertexGraphics.owner = this;
+				vertexGraphics.interactive = true;
+				vertexGraphics.buttonMode = true;
+				vertexGraphics.zIndex = 1;
 
-				const useText = false;
-				if (useText) {
-					// Add interactivity to this vertex: when the user mouses over it,
-					// display some information
-					vertexGraphics.hitArea = new PIXI.Circle(
-						vertex.x + this._center.x,
-						vertex.y + this._center.y,
-						12.0
-					);
-					vertexGraphics.index = index;
-					vertexGraphics.owner = this;
-					vertexGraphics.interactive = true;
-					vertexGraphics.buttonMode = true;
-					vertexGraphics.zIndex = 1;
+				vertexGraphics.mouseover = function() {
+					this.children.forEach(child => (child.visible = true));
+				};
+				vertexGraphics.mouseout = function() {
+					this.children.forEach(child => (child.visible = false));
+				};
 
-					vertexGraphics.mouseover = function() {
-						this.children.forEach(child => (child.visible = true));
-					};
-					vertexGraphics.mouseout = function() {
-						this.children.forEach(child => (child.visible = false));
-					};
+				const style = new PIXI.TextStyle({
+					fontFamily: "Arial",
+					fontSize: 10,
+					fill: 0xd7dcde
+				});
 
-					const style = new PIXI.TextStyle({
-						fontFamily: "Arial",
-						fontSize: 10,
-						fill: 0xd7dcde
-					});
+				const textSpacing = 10.0;
+				const text = new PIXI.Text(`Vertex ID: ${index}`, style);
+				let labelGraphics = new PIXI.Graphics();
+				labelGraphics.beginFill(valley);
+				labelGraphics.drawRect(0.0, 0.0, text.width, text.height);
+				labelGraphics.x = vertex.x + this._center.x + textSpacing;
+				labelGraphics.y = vertex.y + this._center.y - textSpacing;
+				labelGraphics.endFill();
+				labelGraphics.visible = false;
+				labelGraphics.zIndex = 2;
+				labelGraphics.addChild(text);
 
-					const textSpacing = 10.0;
-					const text = new PIXI.Text(`Vertex ID: ${index}`, style);
-					let labelGraphics = new PIXI.Graphics();
-					labelGraphics.beginFill(valley);
-					labelGraphics.drawRect(0.0, 0.0, text.width, text.height);
-					labelGraphics.x = vertex.x + this._center.x + textSpacing;
-					labelGraphics.y = vertex.y + this._center.y - textSpacing;
-					labelGraphics.endFill();
-					labelGraphics.visible = false;
-					labelGraphics.zIndex = 2;
-					labelGraphics.addChild(text);
+				vertexGraphics.addChild(labelGraphics);
+			}
 
-					vertexGraphics.addChild(labelGraphics);
-				}
-
-				this._graphics.addChild(vertexGraphics);
-			});
-		}
-
+			this._graphics.addChild(vertexGraphics);
+		});
+	
 		this._edges.forEach((edgeIndices, edgeIndex) => {
 			const pleatLineStrokeSize = 2;
 			let edgeGraphics = new PIXI.Graphics();

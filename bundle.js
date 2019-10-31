@@ -1769,14 +1769,11 @@ PIXI.Graphics.prototype.dashedLineTo = function (toX, toY) {
 
 var lightBlue = 0xd7dcde;
 var app = new PIXI.Application({
-  width: 512,
+  width: 720,
   height: 720,
-  antialias: true,
-  resolution: 1
+  antialias: true
 });
 app.renderer.backgroundColor = lightBlue;
-app.renderer.view.width = 512;
-app.renderer.view.width = 720;
 document.body.appendChild(app.view);
 window.app = app;
 var inputW = document.getElementById("input_w");
@@ -1788,45 +1785,83 @@ inputW.addEventListener("input", update);
 inputTau.addEventListener("input", update);
 inputN.addEventListener("input", update);
 var windowCenter = new _point.Point(window.app.renderer.view.width * 0.5, window.app.renderer.view.height * 0.5, 0.0);
-var tiles = []; // tiles.push(new Tile(center, 70.0));
+var tiles = [];
+tiles.push(new _tile.Tile(windowCenter, 90.0));
 
-var rows = 8;
-var cols = 4;
-var radius = 70.0;
+var scale = function scale(num, in_min, in_max, out_min, out_max) {
+  return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}; // const rows = 8;
+// const cols = 4;
+// const radius = 70.0;
+// for (let i = 0; i < rows; i++) {
+// 	for (let j = 0; j < cols; j++) {
+// 		const xOffset = radius * j * 2 - (radius * (cols - 0.5));
+// 		const yOffset = radius * i * 1 - (radius * (rows - 0.5)) * 0.5;
+// 		if (i % 2 === 0 && rows > 1) {
+// 			xOffset += radius;
+// 		}
+// 		const center = windowCenter.addDisplacement(new Vector(xOffset, yOffset, 0.0))
+// 		tiles.push(new Tile(center, radius));
+// 	}
+// }
 
-for (var i = 0; i < rows; i++) {
-  for (var j = 0; j < cols; j++) {
-    var xOffset = radius * j * 2 - radius * (cols - 0.5);
-    var yOffset = radius * i * 1 - radius * (rows - 0.5) * 0.5;
 
-    if (i % 2 === 0 && rows > 1) {
-      xOffset += radius;
-    }
+var shiftPressed = false;
+window.addEventListener('keydown', function (e) {
+  return shiftPressed = e.shiftKey;
+});
+window.addEventListener('keyup', function (e) {
+  return shiftPressed = e.shiftKey;
+});
+app.renderer.view.addEventListener('mousedown', add);
 
-    var center = windowCenter.addDisplacement(new _vector.Vector(xOffset, yOffset, 0.0));
-    tiles.push(new _tile.Tile(center, radius));
+function add(e) {
+  var rect = app.renderer.view.getBoundingClientRect();
+  var x = e.clientX - rect.left;
+  var y = e.clientY - rect.top;
+
+  if (shiftPressed) {
+    tiles.push(new _tile.Tile(new _point.Point(x, y, 0.0), 90.0));
+  } else {
+    tiles.forEach(function (tile) {
+      if (tile.bounds.contains(x, y)) {
+        tile.selected = true;
+        console.log(tile.w, tile.tau, tile.n);
+        inputW.value = tile.w;
+        inputTau.value = tile.tau;
+        inputN.value = tile.n;
+      } else {
+        tile.selected = false;
+      }
+    });
   }
+
+  update();
 }
 
 function update(e) {
+  console.log('update called');
   tiles.forEach(function (tile, index) {
-    var old = tile.n;
-    var percent = index / tiles.length;
-    console.log(percent); // Set tile parameters
+    if (tile.selected) {
+      var old = tile.n;
+      var percent = index / tiles.length; // Set tile parameters
 
-    tile.w = parseFloat(inputW.value);
-    tile.tau = parseFloat(inputTau.value) * percent * (Math.PI / 180.0);
-    tile.n = parseInt(inputN.value);
-    tile.buildVertices(); // We only need to rebuild the edges and crease assignments if the number of sides
-    // changes - we want to avoid this, since it erases all of the edits that the user
-    // has made to the tile 
+      tile.w = parseFloat(inputW.value);
+      tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0); // * scale(percent, 0.0, 1.0, 0.5, 1.0);
 
-    if (old !== tile.n) {
-      tile.buildEdgesAndAssignments();
+      tile.n = parseInt(inputN.value);
+      tile.buildVertices(); // We only need to rebuild the edges and crease assignments if the number of sides
+      // changes - we want to avoid this, since it erases all of the edits that the user
+      // has made to the tile 
+
+      if (old !== tile.n) {
+        tile.buildEdgesAndAssignments();
+      }
+
+      pCurrentTwistAngle.innerHTML = "Current twist angle: ".concat((tile.alpha * (180.0 / Math.PI)).toFixed(2), " Degrees");
+      pSafeTwistAngle.innerHTML = "Safe twist angle: ".concat((tile.alphaSafe * (180.0 / Math.PI)).toFixed(2), " Degrees");
     }
 
-    pCurrentTwistAngle.innerHTML = "Current twist angle: ".concat((tile.alpha * (180.0 / Math.PI)).toFixed(2), " Degrees");
-    pSafeTwistAngle.innerHTML = "Safe twist angle: ".concat((tile.alphaSafe * (180.0 / Math.PI)).toFixed(2), " Degrees");
     tile.render();
   });
 } // Call this once to kick off the app
@@ -45188,6 +45223,20 @@ function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return 
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; if (obj != null) { var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
+function isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
+
+function _construct(Parent, args, Class) { if (isNativeReflectConstruct()) { _construct = Reflect.construct; } else { _construct = function _construct(Parent, args, Class) { var a = [null]; a.push.apply(a, args); var Constructor = Function.bind.apply(Parent, a); var instance = new Constructor(); if (Class) _setPrototypeOf(instance, Class.prototype); return instance; }; } return _construct.apply(null, arguments); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
+
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
+
 function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
 
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
@@ -45224,6 +45273,7 @@ function () {
 
     this._center = center;
     this._radius = radius;
+    this._selected = false;
     this.buildVertices();
     this.buildEdgesAndAssignments();
     this.render();
@@ -45357,7 +45407,12 @@ function () {
       {
         var tileGraphics = new PIXI.Graphics(); // Draw the tile polygon
 
-        tileGraphics.lineStyle(1, tan);
+        if (this._selected) {
+          tileGraphics.lineStyle(3, tan);
+        } else {
+          tileGraphics.lineStyle(1, tan);
+        }
+
         tileGraphics.beginFill(tan, 0.25);
         tileGraphics.drawPolygon(this._tilePolygon.points.map(function (point) {
           return [point.x + _this2._center.x, point.y + _this2._center.y];
@@ -45373,62 +45428,59 @@ function () {
         tileGraphics.endFill();
 
         this._graphics.addChild(tileGraphics);
-      }
+      } // Draw the vertices of the crease pattern
 
-      if (true) {
-        // Draw the vertices of the crease pattern
-        this._vertices.forEach(function (vertex, index) {
-          var vertexGraphics = new PIXI.Graphics();
-          vertexGraphics.lineStyle(0);
-          vertexGraphics.beginFill(red);
-          vertexGraphics.drawCircle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 3.0);
-          vertexGraphics.endFill();
-          var useText = false;
+      this._vertices.forEach(function (vertex, index) {
+        var vertexGraphics = new PIXI.Graphics();
+        vertexGraphics.lineStyle(0);
+        vertexGraphics.beginFill(red);
+        vertexGraphics.drawCircle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 3.0);
+        vertexGraphics.endFill();
+        var useText = false;
 
-          if (useText) {
-            // Add interactivity to this vertex: when the user mouses over it,
-            // display some information
-            vertexGraphics.hitArea = new PIXI.Circle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 12.0);
-            vertexGraphics.index = index;
-            vertexGraphics.owner = _this2;
-            vertexGraphics.interactive = true;
-            vertexGraphics.buttonMode = true;
-            vertexGraphics.zIndex = 1;
+        if (useText) {
+          // Add interactivity to this vertex: when the user mouses over it,
+          // display some information
+          vertexGraphics.hitArea = new PIXI.Circle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 12.0);
+          vertexGraphics.index = index;
+          vertexGraphics.owner = _this2;
+          vertexGraphics.interactive = true;
+          vertexGraphics.buttonMode = true;
+          vertexGraphics.zIndex = 1;
 
-            vertexGraphics.mouseover = function () {
-              this.children.forEach(function (child) {
-                return child.visible = true;
-              });
-            };
-
-            vertexGraphics.mouseout = function () {
-              this.children.forEach(function (child) {
-                return child.visible = false;
-              });
-            };
-
-            var style = new PIXI.TextStyle({
-              fontFamily: "Arial",
-              fontSize: 10,
-              fill: 0xd7dcde
+          vertexGraphics.mouseover = function () {
+            this.children.forEach(function (child) {
+              return child.visible = true;
             });
-            var textSpacing = 10.0;
-            var text = new PIXI.Text("Vertex ID: ".concat(index), style);
-            var labelGraphics = new PIXI.Graphics();
-            labelGraphics.beginFill(valley);
-            labelGraphics.drawRect(0.0, 0.0, text.width, text.height);
-            labelGraphics.x = vertex.x + _this2._center.x + textSpacing;
-            labelGraphics.y = vertex.y + _this2._center.y - textSpacing;
-            labelGraphics.endFill();
-            labelGraphics.visible = false;
-            labelGraphics.zIndex = 2;
-            labelGraphics.addChild(text);
-            vertexGraphics.addChild(labelGraphics);
-          }
+          };
 
-          _this2._graphics.addChild(vertexGraphics);
-        });
-      }
+          vertexGraphics.mouseout = function () {
+            this.children.forEach(function (child) {
+              return child.visible = false;
+            });
+          };
+
+          var style = new PIXI.TextStyle({
+            fontFamily: "Arial",
+            fontSize: 10,
+            fill: 0xd7dcde
+          });
+          var textSpacing = 10.0;
+          var text = new PIXI.Text("Vertex ID: ".concat(index), style);
+          var labelGraphics = new PIXI.Graphics();
+          labelGraphics.beginFill(valley);
+          labelGraphics.drawRect(0.0, 0.0, text.width, text.height);
+          labelGraphics.x = vertex.x + _this2._center.x + textSpacing;
+          labelGraphics.y = vertex.y + _this2._center.y - textSpacing;
+          labelGraphics.endFill();
+          labelGraphics.visible = false;
+          labelGraphics.zIndex = 2;
+          labelGraphics.addChild(text);
+          vertexGraphics.addChild(labelGraphics);
+        }
+
+        _this2._graphics.addChild(vertexGraphics);
+      });
 
       this._edges.forEach(function (edgeIndices, edgeIndex) {
         var pleatLineStrokeSize = 2;
@@ -45533,9 +45585,31 @@ function () {
       return this._n;
     }
   }, {
-    key: "alphaSafe",
+    key: "selected",
+    set: function set(selected) {
+      this._selected = selected;
+    },
     get: function get() {
-      return this._n <= 6 ? this._tilePolygon.interiorAngle : this._tilePolygon.exteriorAngle;
+      return this._selected;
+    }
+  }, {
+    key: "bounds",
+    get: function get() {
+      var _this3 = this;
+
+      var flatPoints = this._tilePolygon.points.map(function (point) {
+        return [point.x + _this3._center.x, point.y + _this3._center.y];
+      }).flat();
+
+      var poly = _construct(PIXI.Polygon, _toConsumableArray(flatPoints));
+
+      return poly;
+    }
+  }, {
+    key: "alphaSafe",
+    get: function get() {// return this._n <= 6
+      // 	? this._tilePolygon.interiorAngle
+      // 	: this._tilePolygon.exteriorAngle;
     }
   }, {
     key: "alpha",
