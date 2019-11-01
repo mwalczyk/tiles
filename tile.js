@@ -227,8 +227,36 @@ export class Tile {
 		this._graphics.clear();
 		this._graphics.sortableChildren = true;
 
+
 		{
 			let tileGraphics = new PIXI.Graphics();
+
+			function onDragStart(e) {
+				this.data = e.data;
+				this.alpha = 0.75;
+				this.dragging = true;
+			}
+
+			function onDragEnd() {
+				this.alpha = 1.0;
+				this.dragging = false;
+				this.data = null;
+			}
+
+			function onDragMove() {
+				if (this.dragging) {
+					const newPosition = this.data.getLocalPosition(this.parent.parent);
+					this.parent.x = newPosition.x;
+					this.parent.y = newPosition.y;
+				}
+			}
+			tileGraphics.interactive = true;
+			tileGraphics.buttonMode = true;
+			tileGraphics
+				.on('pointerdown', onDragStart)
+	      .on('pointerup', onDragEnd)
+	      .on('pointerupoutside', onDragEnd)
+	      .on('pointermove', onDragMove);
 
 			// Draw the tile polygon
 			if (this._selected) {
@@ -236,12 +264,12 @@ export class Tile {
 			} else {
 				tileGraphics.lineStyle(1, tan);
 			}
-			
+
 			tileGraphics.beginFill(tan, 0.25);
 			tileGraphics.drawPolygon(
 				this._tilePolygon.points
 					.map(point => {
-						return [point.x + this._center.x, point.y + this._center.y];
+						return [point.x, point.y];
 					})
 					.flat()
 			);
@@ -254,7 +282,7 @@ export class Tile {
 			tileGraphics.drawPolygon(
 				this._centralPolygon.points
 					.map(point => {
-						return [point.x + this._center.x, point.y + this._center.y];
+						return [point.x, point.y];
 					})
 					.flat()
 			);
@@ -270,8 +298,8 @@ export class Tile {
 			vertexGraphics.lineStyle(0);
 			vertexGraphics.beginFill(red);
 			vertexGraphics.drawCircle(
-				vertex.x + this._center.x,
-				vertex.y + this._center.y,
+				vertex.x,
+				vertex.y,
 				3.0
 			);
 			vertexGraphics.endFill();
@@ -329,23 +357,23 @@ export class Tile {
 			const [a, b] = edgeIndices;
 
 			edgeGraphics.moveTo(
-				this._vertices[a].x + this._center.x,
-				this._vertices[a].y + this._center.y
+				this._vertices[a].x,
+				this._vertices[a].y
 			);
 
 			if (this._assignments[edgeIndex] === "M") {
 				// Mountain fold
 				edgeGraphics.lineStyle(pleatLineStrokeSize, mountain);
 				edgeGraphics.lineTo(
-					this._vertices[b].x + this._center.x,
-					this._vertices[b].y + this._center.y
+					this._vertices[b].x,
+					this._vertices[b].y
 				);
 			} else {
 				// Valley fold
 				edgeGraphics.lineStyle(pleatLineStrokeSize, valley);
 				edgeGraphics.dashedLineTo(
-					this._vertices[b].x + this._center.x,
-					this._vertices[b].y + this._center.y,
+					this._vertices[b].x,
+					this._vertices[b].y,
 					2.0, 2.0
 				);
 			}
@@ -356,28 +384,29 @@ export class Tile {
 			let orthogonal = new Vector(-direction.y, direction.x, 0.0);
 			orthogonal = orthogonal.normalize();
 
-			const customBoundsWidth = 14.0;
+			const customBoundsWidth = 6.0;
 			const customBounds = [
 				// 1st point
-				this._vertices[a].x + this._center.x + orthogonal.x * customBoundsWidth,
-				this._vertices[a].y + this._center.y + orthogonal.y * customBoundsWidth,
+				this._vertices[a].x + orthogonal.x * customBoundsWidth,
+				this._vertices[a].y + orthogonal.y * customBoundsWidth,
 
 				// 2nd point
-				this._vertices[b].x + this._center.x + orthogonal.x * customBoundsWidth,
-				this._vertices[b].y + this._center.y + orthogonal.y * customBoundsWidth,
+				this._vertices[b].x + orthogonal.x * customBoundsWidth,
+				this._vertices[b].y + orthogonal.y * customBoundsWidth,
 
 				// 3rd point
-				this._vertices[b].x + this._center.x - orthogonal.x * customBoundsWidth,
-				this._vertices[b].y + this._center.y - orthogonal.y * customBoundsWidth,
+				this._vertices[b].x - orthogonal.x * customBoundsWidth,
+				this._vertices[b].y - orthogonal.y * customBoundsWidth,
 
 				// 4th point
-				this._vertices[a].x + this._center.x - orthogonal.x * customBoundsWidth,
-				this._vertices[a].y + this._center.y - orthogonal.y * customBoundsWidth
+				this._vertices[a].x - orthogonal.x * customBoundsWidth,
+				this._vertices[a].y - orthogonal.y * customBoundsWidth
 			];
 
-			//this.svg.mousedown(this.onMouseDown.bind(this));
-
 			edgeGraphics.hitArea = new PIXI.Polygon(customBounds);
+
+			// Draw the hit area
+			//edgeGraphics.drawPolygon(edgeGraphics.hitArea);
 
 			function onDragStart(event) {
 				this.alpha = 0.25;
@@ -412,11 +441,9 @@ export class Tile {
 			this._graphics.addChild(edgeGraphics);
 		});
 
-		// Scale up everything and draw it at the center of the canvas
-		//const drawScale = 200.0;
-		//this._graphics.x = this._center.x;
-		//this._graphics.y = this._center.y;
-		//this._graphics.scale.set(drawScale);
+		// Center this graphics container
+		this._graphics.x = this._center.x;
+		this._graphics.y = this._center.y;
 
 		window.app.stage.addChild(this._graphics);
 	}

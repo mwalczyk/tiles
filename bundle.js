@@ -1812,8 +1812,7 @@ window.addEventListener('keydown', function (e) {
 });
 window.addEventListener('keyup', function (e) {
   return shiftPressed = e.shiftKey;
-});
-app.renderer.view.addEventListener('mousedown', add);
+}); //app.renderer.view.addEventListener('mousedown', add)
 
 function add(e) {
   var rect = app.renderer.view.getBoundingClientRect();
@@ -1826,9 +1825,8 @@ function add(e) {
     tiles.forEach(function (tile) {
       if (tile.bounds.contains(x, y)) {
         tile.selected = true;
-        console.log(tile.w, tile.tau, tile.n);
         inputW.value = tile.w;
-        inputTau.value = tile.tau;
+        inputTau.value = tile.tau * (180.0 / Math.PI);
         inputN.value = tile.n;
       } else {
         tile.selected = false;
@@ -1840,9 +1838,9 @@ function add(e) {
 }
 
 function update(e) {
-  console.log('update called');
   tiles.forEach(function (tile, index) {
-    if (tile.selected) {
+    if (true) {
+      //tile.selected) {
       var old = tile.n;
       var percent = index / tiles.length; // Set tile parameters
 
@@ -45405,7 +45403,30 @@ function () {
 
       this._graphics.sortableChildren = true;
       {
-        var tileGraphics = new PIXI.Graphics(); // Draw the tile polygon
+        var onDragStart = function onDragStart(e) {
+          this.data = e.data;
+          this.alpha = 0.75;
+          this.dragging = true;
+        };
+
+        var onDragEnd = function onDragEnd() {
+          this.alpha = 1.0;
+          this.dragging = false;
+          this.data = null;
+        };
+
+        var onDragMove = function onDragMove() {
+          if (this.dragging) {
+            var newPosition = this.data.getLocalPosition(this.parent.parent);
+            this.parent.x = newPosition.x;
+            this.parent.y = newPosition.y;
+          }
+        };
+
+        var tileGraphics = new PIXI.Graphics();
+        tileGraphics.interactive = true;
+        tileGraphics.buttonMode = true;
+        tileGraphics.on('pointerdown', onDragStart).on('pointerup', onDragEnd).on('pointerupoutside', onDragEnd).on('pointermove', onDragMove); // Draw the tile polygon
 
         if (this._selected) {
           tileGraphics.lineStyle(3, tan);
@@ -45415,7 +45436,7 @@ function () {
 
         tileGraphics.beginFill(tan, 0.25);
         tileGraphics.drawPolygon(this._tilePolygon.points.map(function (point) {
-          return [point.x + _this2._center.x, point.y + _this2._center.y];
+          return [point.x, point.y];
         }).flat());
         tileGraphics.endFill(); // Draw the central polygon - do not draw stroked, as the creases
         // will be drawn separately below
@@ -45423,7 +45444,7 @@ function () {
         tileGraphics.lineStyle(0);
         tileGraphics.beginFill(tan, 0.25);
         tileGraphics.drawPolygon(this._centralPolygon.points.map(function (point) {
-          return [point.x + _this2._center.x, point.y + _this2._center.y];
+          return [point.x, point.y];
         }).flat());
         tileGraphics.endFill();
 
@@ -45434,7 +45455,7 @@ function () {
         var vertexGraphics = new PIXI.Graphics();
         vertexGraphics.lineStyle(0);
         vertexGraphics.beginFill(red);
-        vertexGraphics.drawCircle(vertex.x + _this2._center.x, vertex.y + _this2._center.y, 3.0);
+        vertexGraphics.drawCircle(vertex.x, vertex.y, 3.0);
         vertexGraphics.endFill();
         var useText = false;
 
@@ -45490,16 +45511,16 @@ function () {
             a = _edgeIndices[0],
             b = _edgeIndices[1];
 
-        edgeGraphics.moveTo(_this2._vertices[a].x + _this2._center.x, _this2._vertices[a].y + _this2._center.y);
+        edgeGraphics.moveTo(_this2._vertices[a].x, _this2._vertices[a].y);
 
         if (_this2._assignments[edgeIndex] === "M") {
           // Mountain fold
           edgeGraphics.lineStyle(pleatLineStrokeSize, mountain);
-          edgeGraphics.lineTo(_this2._vertices[b].x + _this2._center.x, _this2._vertices[b].y + _this2._center.y);
+          edgeGraphics.lineTo(_this2._vertices[b].x, _this2._vertices[b].y);
         } else {
           // Valley fold
           edgeGraphics.lineStyle(pleatLineStrokeSize, valley);
-          edgeGraphics.dashedLineTo(_this2._vertices[b].x + _this2._center.x, _this2._vertices[b].y + _this2._center.y, 2.0, 2.0);
+          edgeGraphics.dashedLineTo(_this2._vertices[b].x, _this2._vertices[b].y, 2.0, 2.0);
         } // A direction vector that runs parallel to this edge
 
 
@@ -45507,14 +45528,14 @@ function () {
 
         var orthogonal = new _vector.Vector(-direction.y, direction.x, 0.0);
         orthogonal = orthogonal.normalize();
-        var customBoundsWidth = 14.0;
+        var customBoundsWidth = 6.0;
         var customBounds = [// 1st point
-        _this2._vertices[a].x + _this2._center.x + orthogonal.x * customBoundsWidth, _this2._vertices[a].y + _this2._center.y + orthogonal.y * customBoundsWidth, // 2nd point
-        _this2._vertices[b].x + _this2._center.x + orthogonal.x * customBoundsWidth, _this2._vertices[b].y + _this2._center.y + orthogonal.y * customBoundsWidth, // 3rd point
-        _this2._vertices[b].x + _this2._center.x - orthogonal.x * customBoundsWidth, _this2._vertices[b].y + _this2._center.y - orthogonal.y * customBoundsWidth, // 4th point
-        _this2._vertices[a].x + _this2._center.x - orthogonal.x * customBoundsWidth, _this2._vertices[a].y + _this2._center.y - orthogonal.y * customBoundsWidth]; //this.svg.mousedown(this.onMouseDown.bind(this));
-
-        edgeGraphics.hitArea = new PIXI.Polygon(customBounds);
+        _this2._vertices[a].x + orthogonal.x * customBoundsWidth, _this2._vertices[a].y + orthogonal.y * customBoundsWidth, // 2nd point
+        _this2._vertices[b].x + orthogonal.x * customBoundsWidth, _this2._vertices[b].y + orthogonal.y * customBoundsWidth, // 3rd point
+        _this2._vertices[b].x - orthogonal.x * customBoundsWidth, _this2._vertices[b].y - orthogonal.y * customBoundsWidth, // 4th point
+        _this2._vertices[a].x - orthogonal.x * customBoundsWidth, _this2._vertices[a].y - orthogonal.y * customBoundsWidth];
+        edgeGraphics.hitArea = new PIXI.Polygon(customBounds); // Draw the hit area
+        //edgeGraphics.drawPolygon(edgeGraphics.hitArea);
 
         function onDragStart(event) {
           this.alpha = 0.25; // Draw the bounds of this line
@@ -45540,13 +45561,11 @@ function () {
         edgeGraphics.on("pointerdown", onDragStart).on("pointerup", onDragEnd).on("pointerupoutside", onDragEnd);
 
         _this2._graphics.addChild(edgeGraphics);
-      }); // Scale up everything and draw it at the center of the canvas
-      //const drawScale = 200.0;
-      //this._graphics.x = this._center.x;
-      //this._graphics.y = this._center.y;
-      //this._graphics.scale.set(drawScale);
+      }); // Center this graphics container
 
 
+      this._graphics.x = this._center.x;
+      this._graphics.y = this._center.y;
       window.app.stage.addChild(this._graphics);
     }
   }, {
