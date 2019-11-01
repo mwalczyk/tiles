@@ -83,7 +83,7 @@ let shiftPressed = false;
 
 window.addEventListener('keydown', e => shiftPressed = e.shiftKey);
 window.addEventListener('keyup', e => shiftPressed = e.shiftKey);
-//app.renderer.view.addEventListener('mousedown', add)
+app.renderer.view.addEventListener('mousedown', add)
 
 function add(e) {
 	const rect = app.renderer.view.getBoundingClientRect();
@@ -91,8 +91,12 @@ function add(e) {
 	const y = e.clientY - rect.top;
 
 	if (shiftPressed) {
-		tiles.push(new Tile(new Point(x, y, 0.0), 90.0));
-	} else {
+		let tile = new Tile(new Point(x, y, 0.0), 90.0);
+		tiles.forEach(tile => tile.selected = false);
+		tile.selected = true;
+		tiles.push(tile);
+	}
+	else {
 		tiles.forEach(tile => {
 			if (tile.bounds.contains(x, y)) {
 				tile.selected = true;
@@ -104,13 +108,13 @@ function add(e) {
 			}
 		});
 	}
-	update();
+	//update();
 }
 
 function update(e) {
 	tiles.forEach((tile, index) => {
 
-		if (true) {//tile.selected) {
+		if (tile.selected) {
 			const old = tile.n;
 
 			const percent = index / tiles.length;

@@ -227,20 +227,23 @@ export class Tile {
 		this._graphics.clear();
 		this._graphics.sortableChildren = true;
 
-
 		{
 			let tileGraphics = new PIXI.Graphics();
 
 			function onDragStart(e) {
 				this.data = e.data;
-				this.alpha = 0.75;
+				this.parent.alpha = 0.5;
 				this.dragging = true;
+
+				this.children.forEach(child => (child.visible = true));
 			}
 
 			function onDragEnd() {
-				this.alpha = 1.0;
+				this.parent.alpha = 1.0;
 				this.dragging = false;
 				this.data = null;
+
+				this.children.forEach(child => (child.visible = false));
 			}
 
 			function onDragMove() {
@@ -248,10 +251,13 @@ export class Tile {
 					const newPosition = this.data.getLocalPosition(this.parent.parent);
 					this.parent.x = newPosition.x;
 					this.parent.y = newPosition.y;
+					this.owner._center.x = newPosition.x;
+					this.owner._center.y = newPosition.y;
 				}
 			}
 			tileGraphics.interactive = true;
 			tileGraphics.buttonMode = true;
+			tileGraphics.owner = this;
 			tileGraphics
 				.on('pointerdown', onDragStart)
 	      .on('pointerup', onDragEnd)
@@ -259,12 +265,7 @@ export class Tile {
 	      .on('pointermove', onDragMove);
 
 			// Draw the tile polygon
-			if (this._selected) {
-				tileGraphics.lineStyle(3, tan);
-			} else {
-				tileGraphics.lineStyle(1, tan);
-			}
-
+			tileGraphics.lineStyle(1, tan);
 			tileGraphics.beginFill(tan, 0.25);
 			tileGraphics.drawPolygon(
 				this._tilePolygon.points
@@ -275,18 +276,18 @@ export class Tile {
 			);
 			tileGraphics.endFill();
 
-			// Draw the central polygon - do not draw stroked, as the creases
-			// will be drawn separately below
-			tileGraphics.lineStyle(0);
-			tileGraphics.beginFill(tan, 0.25);
-			tileGraphics.drawPolygon(
-				this._centralPolygon.points
+			let selectionGraphics = new PIXI.Graphics();
+			selectionGraphics.visible = false;
+			selectionGraphics.lineStyle(3, tan);
+			selectionGraphics.drawPolygon(
+				this._tilePolygon.points
 					.map(point => {
 						return [point.x, point.y];
 					})
 					.flat()
 			);
-			tileGraphics.endFill();
+
+			tileGraphics.addChild(selectionGraphics);
 
 			this._graphics.addChild(tileGraphics);
 		}

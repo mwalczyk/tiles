@@ -1812,7 +1812,8 @@ window.addEventListener('keydown', function (e) {
 });
 window.addEventListener('keyup', function (e) {
   return shiftPressed = e.shiftKey;
-}); //app.renderer.view.addEventListener('mousedown', add)
+});
+app.renderer.view.addEventListener('mousedown', add);
 
 function add(e) {
   var rect = app.renderer.view.getBoundingClientRect();
@@ -1820,7 +1821,12 @@ function add(e) {
   var y = e.clientY - rect.top;
 
   if (shiftPressed) {
-    tiles.push(new _tile.Tile(new _point.Point(x, y, 0.0), 90.0));
+    var tile = new _tile.Tile(new _point.Point(x, y, 0.0), 90.0);
+    tiles.forEach(function (tile) {
+      return tile.selected = false;
+    });
+    tile.selected = true;
+    tiles.push(tile);
   } else {
     tiles.forEach(function (tile) {
       if (tile.bounds.contains(x, y)) {
@@ -1832,15 +1838,13 @@ function add(e) {
         tile.selected = false;
       }
     });
-  }
+  } //update();
 
-  update();
 }
 
 function update(e) {
   tiles.forEach(function (tile, index) {
-    if (true) {
-      //tile.selected) {
+    if (tile.selected) {
       var old = tile.n;
       var percent = index / tiles.length; // Set tile parameters
 
@@ -45405,14 +45409,20 @@ function () {
       {
         var onDragStart = function onDragStart(e) {
           this.data = e.data;
-          this.alpha = 0.75;
+          this.parent.alpha = 0.5;
           this.dragging = true;
+          this.children.forEach(function (child) {
+            return child.visible = true;
+          });
         };
 
         var onDragEnd = function onDragEnd() {
-          this.alpha = 1.0;
+          this.parent.alpha = 1.0;
           this.dragging = false;
           this.data = null;
+          this.children.forEach(function (child) {
+            return child.visible = false;
+          });
         };
 
         var onDragMove = function onDragMove() {
@@ -45420,33 +45430,30 @@ function () {
             var newPosition = this.data.getLocalPosition(this.parent.parent);
             this.parent.x = newPosition.x;
             this.parent.y = newPosition.y;
+            this.owner._center.x = newPosition.x;
+            this.owner._center.y = newPosition.y;
           }
         };
 
         var tileGraphics = new PIXI.Graphics();
         tileGraphics.interactive = true;
         tileGraphics.buttonMode = true;
+        tileGraphics.owner = this;
         tileGraphics.on('pointerdown', onDragStart).on('pointerup', onDragEnd).on('pointerupoutside', onDragEnd).on('pointermove', onDragMove); // Draw the tile polygon
 
-        if (this._selected) {
-          tileGraphics.lineStyle(3, tan);
-        } else {
-          tileGraphics.lineStyle(1, tan);
-        }
-
+        tileGraphics.lineStyle(1, tan);
         tileGraphics.beginFill(tan, 0.25);
         tileGraphics.drawPolygon(this._tilePolygon.points.map(function (point) {
           return [point.x, point.y];
         }).flat());
-        tileGraphics.endFill(); // Draw the central polygon - do not draw stroked, as the creases
-        // will be drawn separately below
-
-        tileGraphics.lineStyle(0);
-        tileGraphics.beginFill(tan, 0.25);
-        tileGraphics.drawPolygon(this._centralPolygon.points.map(function (point) {
+        tileGraphics.endFill();
+        var selectionGraphics = new PIXI.Graphics();
+        selectionGraphics.visible = false;
+        selectionGraphics.lineStyle(3, tan);
+        selectionGraphics.drawPolygon(this._tilePolygon.points.map(function (point) {
           return [point.x, point.y];
         }).flat());
-        tileGraphics.endFill();
+        tileGraphics.addChild(selectionGraphics);
 
         this._graphics.addChild(tileGraphics);
       } // Draw the vertices of the crease pattern
