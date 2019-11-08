@@ -1740,6 +1740,8 @@ var _point = require("./src/point");
 
 var _tile = require("./tile");
 
+var _tiling = require("./tiling");
+
 var _vector = require("./src/vector");
 
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
@@ -1767,13 +1769,13 @@ PIXI.Graphics.prototype.dashedLineTo = function (toX, toY) {
   }
 };
 
-var lightBlue = 0xd7dcde;
 var app = new PIXI.Application({
-  width: 720,
-  height: 720,
-  antialias: true
+  width: 512,
+  height: 512,
+  antialias: true,
+  resolution: 2
 });
-app.renderer.backgroundColor = lightBlue;
+app.renderer.backgroundColor = 0xffffff;
 document.body.appendChild(app.view);
 window.app = app;
 var inputW = document.getElementById("input_w");
@@ -1784,27 +1786,29 @@ var pSafeTwistAngle = document.getElementById("p_safe_twist_angle");
 inputW.addEventListener("input", update);
 inputTau.addEventListener("input", update);
 inputN.addEventListener("input", update);
-var windowCenter = new _point.Point(window.app.renderer.view.width * 0.5, window.app.renderer.view.height * 0.5, 0.0);
-var tiles = [];
-tiles.push(new _tile.Tile(windowCenter, 90.0));
+var windowCenter = new _point.Point(window.app.renderer.view.width * 0.25, window.app.renderer.view.height * 0.25, 0.0);
+var tiles = []; //tiles.push(new Tile(windowCenter, 90.0));
 
 var scale = function scale(num, in_min, in_max, out_min, out_max) {
   return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}; // const rows = 8;
-// const cols = 4;
-// const radius = 70.0;
-// for (let i = 0; i < rows; i++) {
-// 	for (let j = 0; j < cols; j++) {
-// 		const xOffset = radius * j * 2 - (radius * (cols - 0.5));
-// 		const yOffset = radius * i * 1 - (radius * (rows - 0.5)) * 0.5;
-// 		if (i % 2 === 0 && rows > 1) {
-// 			xOffset += radius;
-// 		}
-// 		const center = windowCenter.addDisplacement(new Vector(xOffset, yOffset, 0.0))
-// 		tiles.push(new Tile(center, radius));
-// 	}
-// }
+};
 
+var rows = 8;
+var cols = 4;
+var radius = 45.0;
+
+for (var i = 0; i < rows; i++) {
+  for (var j = 0; j < cols; j++) {
+    var xOffset = radius * j * 2 - radius * (cols - 0.5);
+    var yOffset = radius * i * 1 - radius * (rows - 0.5) * 0.5;
+
+    if (i % 2 === 0 && rows > 1) {
+      xOffset += radius;
+    }
+
+    var center = windowCenter.addDisplacement(new _vector.Vector(xOffset, yOffset, 0.0)); //tiles.push(new Tile(center, radius, i % 2 === 0));
+  }
+}
 
 var shiftPressed = false;
 window.addEventListener('keydown', function (e) {
@@ -1838,40 +1842,39 @@ function add(e) {
         tile.selected = false;
       }
     });
-  } //update();
-
+  }
 }
 
+var tiling = new _tiling.Tiling();
+
 function update(e) {
-  tiles.forEach(function (tile, index) {
-    if (tile.selected) {
-      var old = tile.n;
-      var percent = index / tiles.length; // Set tile parameters
-
-      tile.w = parseFloat(inputW.value);
-      tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0); // * scale(percent, 0.0, 1.0, 0.5, 1.0);
-
-      tile.n = parseInt(inputN.value);
-      tile.buildVertices(); // We only need to rebuild the edges and crease assignments if the number of sides
-      // changes - we want to avoid this, since it erases all of the edits that the user
-      // has made to the tile 
-
-      if (old !== tile.n) {
-        tile.buildEdgesAndAssignments();
-      }
-
-      pCurrentTwistAngle.innerHTML = "Current twist angle: ".concat((tile.alpha * (180.0 / Math.PI)).toFixed(2), " Degrees");
-      pSafeTwistAngle.innerHTML = "Safe twist angle: ".concat((tile.alphaSafe * (180.0 / Math.PI)).toFixed(2), " Degrees");
-    }
-
-    tile.render();
-  });
+  // tiles.forEach((tile, index) => {
+  // 	if (true){//(tile.selected) {
+  // 		const old = tile.n;
+  // 		const percent = index / tiles.length;
+  // 		// Set tile parameters
+  // 		tile.w = parseFloat(inputW.value);
+  // 		tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);// * scale(percent, 0.0, 1.0, 0.5, 1.0);
+  // 		tile.n = parseInt(inputN.value);
+  // 		tile.buildVertices();
+  // 		// We only need to rebuild the edges and crease assignments if the number of sides
+  // 		// changes - we want to avoid this, since it erases all of the edits that the user
+  // 		// has made to the tile 
+  // 		if (old !== tile.n) {
+  // 			tile.buildEdgesAndAssignments();
+  // 		}
+  // 		pCurrentTwistAngle.innerHTML = `Current twist angle: ${(tile.alpha * (180.0 / Math.PI)).toFixed(2)} Degrees`;
+  // 		pSafeTwistAngle.innerHTML = `Safe twist angle: ${(tile.alphaSafe * (180.0 / Math.PI)).toFixed(2)} Degrees`;
+  // 	}
+  // 	tile.render();
+  // });
+  tiling.render(1.0);
 } // Call this once to kick off the app
 
 
 update();
 
-},{"./src/point":55,"./src/vector":57,"./tile":58,"pixi.js":51}],10:[function(require,module,exports){
+},{"./src/point":55,"./src/vector":57,"./tile":58,"./tiling":59,"pixi.js":51}],10:[function(require,module,exports){
 /*!
  * @pixi/accessibility - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -44909,6 +44912,11 @@ function () {
       console.error("Two points cannot be added together");
     }
   }, {
+    key: "scale",
+    value: function scale(scalar) {
+      return new Point(this.x * scalar, this.y * scalar, this.z * scalar);
+    }
+  }, {
     key: "distance",
     value: function distance(other) {
       // Note that `other` should be a `Point`
@@ -44934,6 +44942,11 @@ function () {
 
 
       return new Point(this.x - vec.x, this.y - vec.y, this.z - vec.z);
+    }
+  }], [{
+    key: "origin",
+    value: function origin() {
+      return new Point(0.0, 0.0, 0.0);
     }
   }]);
 
@@ -44974,28 +44987,89 @@ function () {
   function Polygon(points) {
     _classCallCheck(this, Polygon);
 
-    // Clone the points
     this._points = _toConsumableArray(points);
+    this._center = new _point.Point.origin();
   }
+  /*
+   *
+   * @private
+   *
+   * Calculates an array of points that form a regular polygon with `n` 
+   * sides and unit circumradius.
+   *
+   */
+
 
   _createClass(Polygon, [{
+    key: "midpoingAlongEdge",
+    value: function midpoingAlongEdge(index) {
+      if (index < 0 || index >= this.n) {
+        throw new Error("Edge index out of range");
+      }
+
+      var pointA = this.points[index + 0];
+      var pointB = this.points[index + 1];
+      var midpoint = new _point.Point((pointA.x + pointB.x) * 0.5, (pointA.y + pointB.y) * 0.5, (pointA.z + pointB.z) * 0.5);
+      return midpoint;
+    }
+  }, {
+    key: "perpendicularBisector",
+    value: function perpendicularBisector(index) {
+      if (index < 0 || index >= this.n) {
+        throw new Error("Edge index out of range");
+      }
+
+      var midpoint = this.midpoingAlongEdge(index);
+      return midpoint.subtract(this.center);
+    }
+  }, {
     key: "isDegenerate",
     value: function isDegenerate() {
       return this._points.length < 3;
     }
   }, {
+    key: "scale",
+    value: function scale(amount) {
+      var _this = this;
+
+      this._points.forEach(function (point, index) {
+        _this._points[index] = _this._points[index].scale(amount);
+      });
+    }
+  }, {
     key: "rotate",
     value: function rotate(theta) {
+      var _this2 = this;
+
       var transform = _matrix.Matrix.rotationZ(theta);
 
-      for (var i = 0; i < this._points.length; i++) {
-        this._points[i] = transform.multiply(this._points[i]);
-      }
+      this._points.forEach(function (point, index) {
+        var rotated = transform.multiply(_this2._points[index]); // We have to do this since the rotation function above actually returns a `Vector`
+
+        _this2._points[index] = new _point.Point(rotated.x, rotated.y, rotated.z);
+      }); // Note that rotation does not change the center of this polygon
+
+    }
+  }, {
+    key: "move",
+    value: function move(displacement) {
+      var _this3 = this;
+
+      this._points.forEach(function (point, index) {
+        _this3._points[index] = _this3._points[index].addDisplacement(displacement);
+      });
+
+      this._center = this._center.addDisplacement(displacement);
     }
   }, {
     key: "points",
     get: function get() {
       return this._points;
+    }
+  }, {
+    key: "center",
+    get: function get() {
+      return this._center;
     }
   }, {
     key: "n",
@@ -45005,12 +45079,16 @@ function () {
 
   }, {
     key: "inradius",
-    get: function get() {}
+    get: function get() {
+      return this._circumradius * Math.cos(Math.PI / this.n);
+    }
   }, {
     key: "sideLength",
-    get: function get() {}
+    get: function get() {
+      return 2.0 * this._circumradius * Math.sin(Math.PI / this.n);
+    }
   }, {
-    key: "circumRadius",
+    key: "circumradius",
     get: function get() {}
   }, {
     key: "area",
@@ -45026,27 +45104,37 @@ function () {
   }, {
     key: "exteriorAngle",
     get: function get() {
-      return 360 / this.n * (Math.PI / 180.0);
+      return 360.0 / this.n * (Math.PI / 180.0);
     }
-  }, {
-    key: "centroid",
-    get: function get() {}
-  }, {
-    key: "perpendicularBisector",
-    get: function get() {}
   }], [{
-    key: "regular",
-    value: function regular(radius, numberOfSides) {
-      // Calculate points in CCW order
+    key: "_calculate",
+    value: function _calculate(n) {
+      // Calculate the polygon's points in CCW order
       var points = [];
-      var sectorAngle = 2.0 * Math.PI / numberOfSides;
+      var sectorAngle = 2.0 * Math.PI / n;
 
-      for (var i = 0; i < numberOfSides; i++) {
+      for (var i = 0; i < n; i++) {
         var theta = sectorAngle * i;
-        points.push(new _point.Point(radius * Math.cos(theta), radius * Math.sin(theta), 0.0));
+        points.push(new _point.Point(Math.cos(theta), Math.sin(theta), 0.0));
       }
 
+      return points;
+    }
+  }, {
+    key: "withCircumradius",
+    value: function withCircumradius(circumradius, numberOfSides) {
+      var points = Polygon._calculate(numberOfSides);
+
+      points.forEach(function (point, index) {
+        points[index] = point.scale(circumradius);
+      });
       return new Polygon(points);
+    }
+  }, {
+    key: "withSideLength",
+    value: function withSideLength(sideLength, numberOfSides) {
+      var circumradius = sideLength / (2.0 * Math.sin(Math.PI / numberOfSides));
+      return Polygon.withCircumradius(circumradius, numberOfSides);
     }
   }]);
 
@@ -45262,6 +45350,8 @@ var Tile =
 /*#__PURE__*/
 function () {
   function Tile(center, radius) {
+    var reversed = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
     _classCallCheck(this, Tile);
 
     // The segment width ratio along each of the tile polygon's edges
@@ -45275,6 +45365,7 @@ function () {
 
     this._center = center;
     this._radius = radius;
+    this._reversed = reversed;
     this._selected = false;
     this.buildVertices();
     this.buildEdgesAndAssignments();
@@ -45287,7 +45378,7 @@ function () {
       var _this = this;
 
       // First, create the tile polygon
-      this._tilePolygon = _polygon.Polygon.regular(this._radius, this._n); // Then, construct a rotation matrix to rotate each edge of the tile polygon
+      this._tilePolygon = _polygon.Polygon.withCircumradius(this._radius, this._n); // Then, construct a rotation matrix to rotate each edge of the tile polygon
       // by tilt angle `tau`
 
       var transform = _matrix.Matrix.rotationZ(this._tau); // The (infinite) lines that run along each of the pleats
@@ -45378,17 +45469,17 @@ function () {
         // The first pleat crease
         this._edges.push([i * 3 + 0, i * 3 + 1]);
 
-        this._assignments.push("M"); // The second pleat crease
+        this._assignments.push(this._reversed ? "V" : "M"); // The second pleat crease
 
 
         this._edges.push([i * 3 + 2, (i * 3 + 3) % this._vertices.length]);
 
-        this._assignments.push("V"); // The crease along the central polygon
+        this._assignments.push(this._reversed ? "M" : "V"); // The crease along the central polygon
 
 
         this._edges.push([i * 3 + 0, (i * 3 + 3) % this._vertices.length]);
 
-        this._assignments.push("M");
+        this._assignments.push(this._reversed ? "M" : "V");
       }
     }
   }, {
@@ -45396,10 +45487,10 @@ function () {
     value: function render() {
       var _this2 = this;
 
-      var tan = 0xb5a6a5;
-      var red = 0xbf3054;
-      var mountain = 0xbd5e51;
-      var valley = 0x3259a8;
+      var tan = 0xc9ece4;
+      var red = 0xfe8102;
+      var mountain = 0x11147a;
+      var valley = 0xee4bf6;
 
       this._graphics.removeChildren();
 
@@ -45441,8 +45532,8 @@ function () {
         tileGraphics.owner = this;
         tileGraphics.on('pointerdown', onDragStart).on('pointerup', onDragEnd).on('pointerupoutside', onDragEnd).on('pointermove', onDragMove); // Draw the tile polygon
 
-        tileGraphics.lineStyle(1, tan);
-        tileGraphics.beginFill(tan, 0.25);
+        tileGraphics.lineStyle(1, red);
+        tileGraphics.beginFill(tan);
         tileGraphics.drawPolygon(this._tilePolygon.points.map(function (point) {
           return [point.x, point.y];
         }).flat());
@@ -45462,7 +45553,7 @@ function () {
         var vertexGraphics = new PIXI.Graphics();
         vertexGraphics.lineStyle(0);
         vertexGraphics.beginFill(red);
-        vertexGraphics.drawCircle(vertex.x, vertex.y, 3.0);
+        vertexGraphics.drawCircle(vertex.x, vertex.y, 1.5);
         vertexGraphics.endFill();
         var useText = false;
 
@@ -45511,7 +45602,7 @@ function () {
       });
 
       this._edges.forEach(function (edgeIndices, edgeIndex) {
-        var pleatLineStrokeSize = 2;
+        var pleatLineStrokeSize = 1;
         var edgeGraphics = new PIXI.Graphics();
 
         var _edgeIndices = _slicedToArray(edgeIndices, 2),
@@ -45527,7 +45618,7 @@ function () {
         } else {
           // Valley fold
           edgeGraphics.lineStyle(pleatLineStrokeSize, valley);
-          edgeGraphics.dashedLineTo(_this2._vertices[b].x, _this2._vertices[b].y, 2.0, 2.0);
+          edgeGraphics.dashedLineTo(_this2._vertices[b].x, _this2._vertices[b].y, 1.0, 1.0);
         } // A direction vector that runs parallel to this edge
 
 
@@ -45661,4 +45752,126 @@ function () {
 
 exports.Tile = Tile;
 
-},{"./src/line":53,"./src/matrix":54,"./src/point":55,"./src/polygon":56,"./src/vector":57,"pixi.js":51}]},{},[9]);
+},{"./src/line":53,"./src/matrix":54,"./src/point":55,"./src/polygon":56,"./src/vector":57,"pixi.js":51}],59:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Tiling = void 0;
+
+var PIXI = _interopRequireWildcard(require("pixi.js"));
+
+var _point = require("./src/point");
+
+var _polygon = require("./src/polygon");
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; if (obj != null) { var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var Tiling =
+/*#__PURE__*/
+function () {
+  /*
+   *
+   * Construct a tiling from a valid vertex figure.
+   *
+   * Note that `vertexFigure` should correspond to one of
+   * the 11 known Archimedean tilings:
+   *
+   * 3.3.3.3.3.3
+   * 3.3.3.3.6
+   * 3.3.3.4.4
+   * 3.3.4.3.4
+   * 3.3.4.12
+   * 3.4.3.12
+   * 3.3.6.6
+   * 3.6.3.6
+   * 3.4.4.6
+   * 3.4.6.4
+   * 3.12.12
+   * 4.4.4.4
+   * 4.6.12
+   * 4.8.8
+   * 6.6.6
+   *
+   */
+  function Tiling() {
+    var vertexFigure = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [6, 6, 6, 6, 6, 6];
+
+    _classCallCheck(this, Tiling);
+
+    this._vertexFigure = [4, 6, 12];
+    this._polygons = this._vertexFigure.map(function (vertex) {
+      return _polygon.Polygon.withSideLength(1.0, vertex);
+    });
+
+    this._polygons.forEach(function (polygon) {
+      return polygon.scale(20.0);
+    });
+
+    console.log(this._polygons);
+    this.assemble();
+  }
+
+  _createClass(Tiling, [{
+    key: "assemble",
+    value: function assemble() {
+      console.log('Constructing lattice patch...');
+      var latticePatch = [];
+
+      for (var i = 1; i < this._polygons.length; i++) {
+        var perpBisectA = this._polygons[0].perpendicularBisector(i);
+
+        var perpBisectB = this._polygons[i].perpendicularBisector(i);
+
+        var theta = perpBisectA.angle(perpBisectB);
+
+        this._polygons[i].rotate(theta); // Recalculate this polygon's bisector (since it has been rotated)
+
+
+        perpBisectB = this._polygons[i].perpendicularBisector(i); // Calculate a displacement amount
+
+        var amount = Math.abs(perpBisectA.length() + perpBisectB.length());
+        perpBisectA = perpBisectA.normalize();
+
+        this._polygons[i].move(perpBisectA.multiplyScalar(amount));
+      }
+    }
+  }, {
+    key: "render",
+    value: function render(scale) {
+      var _this = this;
+
+      console.log('rendering with ', scale);
+      var windowCenter = new _point.Point(window.app.renderer.view.width * 0.25, window.app.renderer.view.height * 0.25, 0.0);
+      this._graphics = new PIXI.Graphics(); //this._graphics.beginFill(0xff0000);
+
+      this._graphics.lineStyle(1, 0x00ff00);
+
+      this._polygons.forEach(function (polygon) {
+        var flatPoints = polygon.points.map(function (point) {
+          return [point.x + windowCenter.x, point.y + windowCenter.y];
+        }).flat();
+
+        _this._graphics.drawPolygon(flatPoints);
+      }); //this._graphics.endFill();
+
+
+      window.app.stage.addChild(this._graphics);
+    }
+  }]);
+
+  return Tiling;
+}();
+
+exports.Tiling = Tiling;
+
+},{"./src/point":55,"./src/polygon":56,"pixi.js":51}]},{},[9]);

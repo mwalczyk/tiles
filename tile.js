@@ -12,7 +12,7 @@ import { Vector } from "./src/vector";
  *
  */
 export class Tile {
-	constructor(center, radius) {
+	constructor(center, radius, reversed=false) {
 		// The segment width ratio along each of the tile polygon's edges
 		this._w = 0.25;
 
@@ -29,6 +29,8 @@ export class Tile {
 		this._center = center;
 
 		this._radius = radius;
+
+		this._reversed = reversed;
 
 		this._selected = false;
 
@@ -107,7 +109,7 @@ export class Tile {
 
 	buildVertices() {
 		// First, create the tile polygon
-		this._tilePolygon = Polygon.regular(this._radius, this._n);
+		this._tilePolygon = Polygon.withCircumradius(this._radius, this._n);
 
 		// Then, construct a rotation matrix to rotate each edge of the tile polygon
 		// by tilt angle `tau`
@@ -205,23 +207,23 @@ export class Tile {
 		for (let i = 0; i < this._n; i++) {
 			// The first pleat crease
 			this._edges.push([(i * 3) + 0, (i * 3) + 1]);
-			this._assignments.push("M");
+			this._assignments.push(this._reversed ? "V" : "M");
 
 			// The second pleat crease
 			this._edges.push([(i * 3) + 2, ((i * 3) + 3) % this._vertices.length]);
-			this._assignments.push("V");
+			this._assignments.push(this._reversed ? "M" : "V");
 
 			// The crease along the central polygon
 			this._edges.push([(i * 3) + 0, ((i * 3) + 3) % this._vertices.length]);
-			this._assignments.push("M");
+			this._assignments.push(this._reversed ? "M" : "V");
 		}
 	}
 
 	render() {
-		const tan = 0xb5a6a5;
-		const red = 0xbf3054;
-		const mountain = 0xbd5e51;
-		const valley = 0x3259a8;
+		const tan = 0xc9ece4;
+		const red = 0xfe8102;
+		const mountain = 0x11147a;
+		const valley = 0xee4bf6;
 
 		this._graphics.removeChildren();
 		this._graphics.clear();
@@ -265,8 +267,8 @@ export class Tile {
 	      .on('pointermove', onDragMove);
 
 			// Draw the tile polygon
-			tileGraphics.lineStyle(1, tan);
-			tileGraphics.beginFill(tan, 0.25);
+			tileGraphics.lineStyle(1, red);
+			tileGraphics.beginFill(tan);
 			tileGraphics.drawPolygon(
 				this._tilePolygon.points
 					.map(point => {
@@ -301,7 +303,7 @@ export class Tile {
 			vertexGraphics.drawCircle(
 				vertex.x,
 				vertex.y,
-				3.0
+				1.5
 			);
 			vertexGraphics.endFill();
 
@@ -352,7 +354,7 @@ export class Tile {
 		});
 	
 		this._edges.forEach((edgeIndices, edgeIndex) => {
-			const pleatLineStrokeSize = 2;
+			const pleatLineStrokeSize = 1;
 			let edgeGraphics = new PIXI.Graphics();
 
 			const [a, b] = edgeIndices;
@@ -375,7 +377,7 @@ export class Tile {
 				edgeGraphics.dashedLineTo(
 					this._vertices[b].x,
 					this._vertices[b].y,
-					2.0, 2.0
+					1.0, 1.0
 				);
 			}
 

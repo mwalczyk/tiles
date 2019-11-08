@@ -7,6 +7,10 @@ export class Point {
 		this.z = z;
 	}
 
+	static origin() {
+		return new Point(0.0, 0.0, 0.0);
+	}
+
 	copy() {
 		return new Point(this.x, this.y, this.z);
 	}
@@ -19,6 +23,10 @@ export class Point {
 	add(other) {
 		// Note that `other` should be a `Point`
 		console.error("Two points cannot be added together");
+	}
+
+	scale(scalar) {
+		return new Point(this.x * scalar, this.y * scalar, this.z * scalar);
 	}
 
 	distance(other) {

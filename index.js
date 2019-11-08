@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js";
 
 import { Point } from "./src/point";
 import { Tile } from "./tile";
+import { Tiling } from "./tiling";
 import { Vector } from "./src/vector";
 
 PIXI.Graphics.prototype.dashedLineTo = function(toX, toY, dash=2, gap=2) {
@@ -31,13 +32,13 @@ PIXI.Graphics.prototype.dashedLineTo = function(toX, toY, dash=2, gap=2) {
 	}
 };
 
-const lightBlue = 0xd7dcde;
 let app = new PIXI.Application({
-	width: 720,
-	height: 720,
-	antialias: true
+	width: 512,
+	height: 512,
+	antialias: true,
+	resolution: 2
 });
-app.renderer.backgroundColor = lightBlue;
+app.renderer.backgroundColor = 0xffffff;
 document.body.appendChild(app.view);
 window.app = app;
 
@@ -51,34 +52,34 @@ inputTau.addEventListener("input", update);
 inputN.addEventListener("input", update);
 
 let windowCenter = new Point(
-	window.app.renderer.view.width * 0.5,
-	window.app.renderer.view.height * 0.5,
+	window.app.renderer.view.width * 0.25,
+	window.app.renderer.view.height * 0.25,
 	0.0);
 
 const tiles = [];
-tiles.push(new Tile(windowCenter, 90.0));
+//tiles.push(new Tile(windowCenter, 90.0));
 
 const scale = (num, in_min, in_max, out_min, out_max) => {
   return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-// const rows = 8;
-// const cols = 4;
-// const radius = 70.0;
-// for (let i = 0; i < rows; i++) {
-// 	for (let j = 0; j < cols; j++) {
+const rows = 8;
+const cols = 4;
+const radius = 45.0;
+for (let i = 0; i < rows; i++) {
+	for (let j = 0; j < cols; j++) {
 
-// 		const xOffset = radius * j * 2 - (radius * (cols - 0.5));
-// 		const yOffset = radius * i * 1 - (radius * (rows - 0.5)) * 0.5;
+		const xOffset = radius * j * 2 - (radius * (cols - 0.5));
+		const yOffset = radius * i * 1 - (radius * (rows - 0.5)) * 0.5;
 
-// 		if (i % 2 === 0 && rows > 1) {
-// 			xOffset += radius;
-// 		}
+		if (i % 2 === 0 && rows > 1) {
+			xOffset += radius;
+		}
 
-// 		const center = windowCenter.addDisplacement(new Vector(xOffset, yOffset, 0.0))
-// 		tiles.push(new Tile(center, radius));
-// 	}
-// }
+		const center = windowCenter.addDisplacement(new Vector(xOffset, yOffset, 0.0))
+		//tiles.push(new Tile(center, radius, i % 2 === 0));
+	}
+}
 let shiftPressed = false;
 
 window.addEventListener('keydown', e => shiftPressed = e.shiftKey);
@@ -108,36 +109,39 @@ function add(e) {
 			}
 		});
 	}
-	//update();
 }
 
+let tiling = new Tiling();
+
 function update(e) {
-	tiles.forEach((tile, index) => {
+	// tiles.forEach((tile, index) => {
 
-		if (tile.selected) {
-			const old = tile.n;
+	// 	if (true){//(tile.selected) {
+	// 		const old = tile.n;
 
-			const percent = index / tiles.length;
+	// 		const percent = index / tiles.length;
 
-			// Set tile parameters
-			tile.w = parseFloat(inputW.value);
-			tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);// * scale(percent, 0.0, 1.0, 0.5, 1.0);
-			tile.n = parseInt(inputN.value);
+	// 		// Set tile parameters
+	// 		tile.w = parseFloat(inputW.value);
+	// 		tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);// * scale(percent, 0.0, 1.0, 0.5, 1.0);
+	// 		tile.n = parseInt(inputN.value);
 
-			tile.buildVertices();
+	// 		tile.buildVertices();
 
-			// We only need to rebuild the edges and crease assignments if the number of sides
-			// changes - we want to avoid this, since it erases all of the edits that the user
-			// has made to the tile 
-			if (old !== tile.n) {
-				tile.buildEdgesAndAssignments();
-			}
+	// 		// We only need to rebuild the edges and crease assignments if the number of sides
+	// 		// changes - we want to avoid this, since it erases all of the edits that the user
+	// 		// has made to the tile 
+	// 		if (old !== tile.n) {
+	// 			tile.buildEdgesAndAssignments();
+	// 		}
 			
-			pCurrentTwistAngle.innerHTML = `Current twist angle: ${(tile.alpha * (180.0 / Math.PI)).toFixed(2)} Degrees`;
-			pSafeTwistAngle.innerHTML = `Safe twist angle: ${(tile.alphaSafe * (180.0 / Math.PI)).toFixed(2)} Degrees`;
-		}
-		tile.render();
-	});
+	// 		pCurrentTwistAngle.innerHTML = `Current twist angle: ${(tile.alpha * (180.0 / Math.PI)).toFixed(2)} Degrees`;
+	// 		pSafeTwistAngle.innerHTML = `Safe twist angle: ${(tile.alphaSafe * (180.0 / Math.PI)).toFixed(2)} Degrees`;
+	// 	}
+	// 	tile.render();
+	// });
+
+	tiling.render(1.0);
 }
 
 // Call this once to kick off the app
