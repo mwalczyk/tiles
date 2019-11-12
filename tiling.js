@@ -92,6 +92,42 @@ export class Tiling {
 			return base;
 		});
 		this._latticePolygons.forEach(polygon => polygon.scale(scale));
+
+
+		// Generate the full tiling (or at least, a couple rows and columns)
+		this._polygons = [];
+		const rows = 2;
+		const cols = 3;
+		for (let i = 0; i < rows; i++) {
+			for (let j = 0; j < cols; j++) {
+			
+				let iCentered = i - rows/2;
+				let jCentered = j - cols/2;
+				let offset = this._latticeVector1.multiplyScalar(iCentered).add(this._latticeVector2.multiplyScalar(jCentered));
+				offset = offset.multiplyScalar(-scale);
+
+				this._latticePolygons.forEach((polygon, index) => {
+					let poly = polygon.copy();
+					poly.move(new Vector(offset.x, offset.y, 0.0));
+					this._polygons.push(poly);
+
+				});
+				
+
+			}
+		}
+	}
+
+	get vertexFigurePolygons() {
+		return this._vertexFigurePolygons;
+	}
+
+	get latticePolygons() {
+		return this._latticePolygons;
+	}
+
+	get polygons() {
+		return this._polygons;
 	}
 
 	render(x, y) {
@@ -108,7 +144,7 @@ export class Tiling {
 		this._vertexFigurePolygons.forEach((polygon, index) => {
 			const flatPoints = polygon.points
 				.map(point => {
-					const yOffset = y < 100 ? 80.0 : 120.0;
+					const yOffset = 120.0;//y < 100 ? 80.0 : 120.0;
 					return [point.x - 0.0, point.y + yOffset];
 				})
 				.flat();
@@ -120,36 +156,48 @@ export class Tiling {
 
 		const rows = 2;
 		const cols = 3;
-		for (let i = 0; i < rows; i++) {
-			for (let j = 0; j < cols; j++) {
+		// for (let i = 0; i < rows; i++) {
+		// 	for (let j = 0; j < cols; j++) {
 			
-				let iCentered = i - rows/2;
-				let jCentered = j - cols/2;
-				let offset = this._latticeVector1.multiplyScalar(iCentered).add(this._latticeVector2.multiplyScalar(jCentered));
-				offset = offset.multiplyScalar(-scale);
+		// 		let iCentered = i - rows/2;
+		// 		let jCentered = j - cols/2;
+		// 		let offset = this._latticeVector1.multiplyScalar(iCentered).add(this._latticeVector2.multiplyScalar(jCentered));
+		// 		offset = offset.multiplyScalar(-scale);
 
-				this._latticePolygons.forEach((polygon, index) => {
+		// 		this._latticePolygons.forEach((polygon, index) => {
 
-					const flatPoints = polygon.points
-						.map(point => {
-							return [point.x + offset.x, point.y + offset.y];
-						})
-						.flat();
+		// 			const flatPoints = polygon.points
+		// 				.map(point => {
+		// 					return [point.x + offset.x, point.y + offset.y];
+		// 				})
+		// 				.flat();
 
-					let percent = ((i + j) * this._latticePolygons.length + index) / (rows * cols * this._latticePolygons.length);
-					this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
-					this._graphics.drawPolygon(flatPoints);
-					this._graphics.endFill();
+		// 			let percent = ((i + j) * this._latticePolygons.length + index) / (rows * cols * this._latticePolygons.length);
+		// 			this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
+		// 			this._graphics.drawPolygon(flatPoints);
+		// 			this._graphics.endFill();
 
-					// Draw the (local) origin of each lattice patch
-					// this._graphics.beginFill(0xed8345);
-					// this._graphics.drawCircle(offset.x, offset.y, 2.0);
-					// this._graphics.endFill();
-				});
-				
+		// 			// Draw the (local) origin of each lattice patch
+		// 			// this._graphics.beginFill(0xed8345);
+		// 			// this._graphics.drawCircle(offset.x, offset.y, 2.0);
+		// 			// this._graphics.endFill();
+		// 		});
+		// 	}
+		// }
 
-			}
-		}
+		this._polygons.forEach((polygon, index) => {
+			const flatPoints = polygon.points
+				.map(point => {
+					return [point.x, point.y];
+				})
+				.flat();
+
+			let percent = (index) / (rows * cols * this._latticePolygons.length);
+			this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
+			this._graphics.drawPolygon(flatPoints);
+			this._graphics.endFill();
+
+		});
 
 		// Draw the origin
 		// this._graphics.lineStyle(0, 0xffffff);

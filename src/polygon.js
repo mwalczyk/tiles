@@ -7,6 +7,10 @@ export class Polygon {
 		this._center = new Point.origin();
 	}
 
+	copy() {
+		return new Polygon(this._points);
+	}
+
 	/*
 	 *
 	 * @private

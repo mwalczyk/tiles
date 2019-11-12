@@ -12,21 +12,27 @@ import { Vector } from "./src/vector";
  *
  */
 export class Tile {
-	constructor(polygon, reversed=false) {
+	constructor(center, radius, reversed=false) {
 		// The segment width ratio along each of the tile polygon's edges
 		this._w = 0.25;
 
 		// The tilt angle of the twist
 		this._tau = 120.0 * (Math.PI / 180.0);
 
-		// The polygon that forms the bounds of this twist
-		this._tilePolygon = polygon.copy();
-		this._tilePolygon.scale(3.0);
+		// The number of sides on both the tile polygon and the central polygon
+		this._n = 4;
 
 		// The PIXI graphics container
 		this._graphics = new PIXI.Graphics();
 
+		// Where this tile will be centered within the app's canvas
+		this._center = center;
+
+		this._radius = radius;
+
 		this._reversed = reversed;
+
+		this._selected = false;
 
 		this.buildVertices();
 		this.buildEdgesAndAssignments();
@@ -44,6 +50,17 @@ export class Tile {
 		this._tau = tau;
 	}
 
+	set n(n) {
+		if (n < 3) {
+			throw new Error("Tile cannot have less than 3 sides");
+		}
+		this._n = n;
+	}
+
+	set selected(selected) {
+		this._selected = selected;
+	}
+
 	get w() {
 		return this._w;
 	}
@@ -53,13 +70,27 @@ export class Tile {
 	}
 
 	get n() {
-		return this._tilePolygon.n;
+		return this._n;
+	}
+
+	get selected() {
+		return this._selected;
+	}
+
+	get bounds() {
+		const flatPoints = this._tilePolygon.points.map(point => {
+				return [point.x + this._center.x, point.y + this._center.y];
+		}).flat();
+
+		const poly = new PIXI.Polygon(...flatPoints);
+		
+		return poly;
 	}
 
 	get alphaSafe() {
-		return this._tilePolygon.n <= 6
-			? this._tilePolygon.interiorAngle
-			: this._tilePolygon.exteriorAngle;
+		// return this._n <= 6
+		// 	? this._tilePolygon.interiorAngle
+		// 	: this._tilePolygon.exteriorAngle;
 	}
 
 	get alpha() {
@@ -77,7 +108,10 @@ export class Tile {
 	}
 
 	buildVertices() {
-		// Construct a rotation matrix to rotate each edge of the tile polygon
+		// First, create the tile polygon
+		this._tilePolygon = Polygon.withCircumradius(this._radius, this._n);
+
+		// Then, construct a rotation matrix to rotate each edge of the tile polygon
 		// by tilt angle `tau`
 		const transform = Matrix.rotationZ(this._tau);
 
@@ -170,7 +204,7 @@ export class Tile {
 		//   /				 /
 		//  2         1
 		// 
-		for (let i = 0; i < this._tilePolygon.n; i++) {
+		for (let i = 0; i < this._n; i++) {
 			// The first pleat crease
 			this._edges.push([(i * 3) + 0, (i * 3) + 1]);
 			this._assignments.push(this._reversed ? "V" : "M");
@@ -186,8 +220,8 @@ export class Tile {
 	}
 
 	render() {
-		const green = 0xc9ece4;
-		const orange = 0xfe8102;
+		const tan = 0xc9ece4;
+		const red = 0xfe8102;
 		const mountain = 0x11147a;
 		const valley = 0xee4bf6;
 
@@ -198,9 +232,43 @@ export class Tile {
 		{
 			let tileGraphics = new PIXI.Graphics();
 
+			function onDragStart(e) {
+				this.data = e.data;
+				this.parent.alpha = 0.5;
+				this.dragging = true;
+
+				this.children.forEach(child => (child.visible = true));
+			}
+
+			function onDragEnd() {
+				this.parent.alpha = 1.0;
+				this.dragging = false;
+				this.data = null;
+
+				this.children.forEach(child => (child.visible = false));
+			}
+
+			function onDragMove() {
+				if (this.dragging) {
+					const newPosition = this.data.getLocalPosition(this.parent.parent);
+					this.parent.x = newPosition.x;
+					this.parent.y = newPosition.y;
+					this.owner._center.x = newPosition.x;
+					this.owner._center.y = newPosition.y;
+				}
+			}
+			tileGraphics.interactive = true;
+			tileGraphics.buttonMode = true;
+			tileGraphics.owner = this;
+			tileGraphics
+				.on('pointerdown', onDragStart)
+	      .on('pointerup', onDragEnd)
+	      .on('pointerupoutside', onDragEnd)
+	      .on('pointermove', onDragMove);
+
 			// Draw the tile polygon
-			tileGraphics.lineStyle(1, orange);
-			tileGraphics.beginFill(green);
+			tileGraphics.lineStyle(1, red);
+			tileGraphics.beginFill(tan);
 			tileGraphics.drawPolygon(
 				this._tilePolygon.points
 					.map(point => {
@@ -210,6 +278,19 @@ export class Tile {
 			);
 			tileGraphics.endFill();
 
+			let selectionGraphics = new PIXI.Graphics();
+			selectionGraphics.visible = false;
+			selectionGraphics.lineStyle(3, tan);
+			selectionGraphics.drawPolygon(
+				this._tilePolygon.points
+					.map(point => {
+						return [point.x, point.y];
+					})
+					.flat()
+			);
+
+			tileGraphics.addChild(selectionGraphics);
+
 			this._graphics.addChild(tileGraphics);
 		}
 
@@ -218,11 +299,11 @@ export class Tile {
 			let vertexGraphics = new PIXI.Graphics();
 
 			vertexGraphics.lineStyle(0);
-			vertexGraphics.beginFill(orange);
+			vertexGraphics.beginFill(red);
 			vertexGraphics.drawCircle(
 				vertex.x,
 				vertex.y,
-				2.0
+				1.5
 			);
 			vertexGraphics.endFill();
 
@@ -364,14 +445,8 @@ export class Tile {
 		});
 
 		// Center this graphics container
-		let windowCenter = new Point(
-			window.app.renderer.view.width * 0.25,
-			window.app.renderer.view.height * 0.25,
-			0.0
-		);
-		this._graphics.x = windowCenter.x;
-		this._graphics.y = windowCenter.y;
-		//this._graphics.scale.set(0.5);
+		this._graphics.x = this._center.x;
+		this._graphics.y = this._center.y;
 
 		window.app.stage.addChild(this._graphics);
 	}
