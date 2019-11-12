@@ -2,7 +2,7 @@ import * as PIXI from "pixi.js";
 
 import { Point } from "./src/point";
 import { Tile } from "./tile";
-import { Tiling } from "./tiling";
+import { Tiling, vertexFigures } from "./tiling";
 import { Vector } from "./src/vector";
 
 PIXI.Graphics.prototype.dashedLineTo = function(toX, toY, dash=2, gap=2) {
@@ -38,7 +38,7 @@ let app = new PIXI.Application({
 	antialias: true,
 	resolution: 2
 });
-app.renderer.backgroundColor = 0xffffff;
+app.renderer.backgroundColor = 0xe6e0df;
 document.body.appendChild(app.view);
 window.app = app;
 
@@ -111,7 +111,13 @@ function add(e) {
 	}
 }
 
-let tiling = new Tiling();
+let tilings = [
+	new Tiling(0)
+];
+
+// for (let i = 0; i < 15; i++) {
+// 	tilings.push(new Tiling(i));
+// }
 
 function update(e) {
 	// tiles.forEach((tile, index) => {
@@ -140,8 +146,15 @@ function update(e) {
 	// 	}
 	// 	tile.render();
 	// });
+	tilings.forEach((tile, index) => {
 
-	tiling.render(1.0);
+		tile.render(0, 0)
+		// let x = (index % 4.0) - 1.5;
+		// let y = Math.floor(index / 4.0) - 1.5;
+
+		// tile.render(x * 100.0, y * 100.0);
+
+	});
 }
 
 // Call this once to kick off the app
