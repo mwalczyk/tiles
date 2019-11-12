@@ -35,7 +35,7 @@ PIXI.Graphics.prototype.dashedLineTo = function(toX, toY, dash=2, gap=2) {
 
 let app = new PIXI.Application({
 	width: 512,
-	height: 512,
+	height: 720,
 	antialias: true,
 	resolution: 2
 });
@@ -112,11 +112,13 @@ function add(e) {
 	}
 }
 
+// Create all lattice patches
 let tilings = []
-
 for (let patch in lattice.latticePatches) {
 	tilings.push(new Tiling(patch));
 }
+
+//let tilings = [new Tiling("3.3.4.3.4")];
 
 function update(e) {
 	// tiles.forEach((tile, index) => {
@@ -145,13 +147,14 @@ function update(e) {
 	// 	}
 	// 	tile.render();
 	// });
+
 	tilings.forEach((tile, index) => {
 
-//		tile.render(0, 0)
 		let x = (index % 4.0) - 1.5;
-		let y = Math.floor(index / 4.0) - 1.5;
+		let y = Math.floor(index / 4.0) - 1.25;
+		tile.render(x * 120.0, y * 220.0);
 
-		tile.render(x * 100.0, y * 100.0);
+		//tile.render(0.0, 0.0);
 
 	});
 }

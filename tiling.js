@@ -24,6 +24,8 @@ export const vertexFigures = [
 	 [6, 6, 6]
 ];
 
+const scale = 10.0;
+
 export class Tiling {
 	/*
 	 *
@@ -42,7 +44,7 @@ export class Tiling {
 
 	assemble() {
 		let sum = 0.0;
-		this._polygons = this._vertexFigure.map((vertex, index) => {
+		this._vertexFigurePolygons = this._vertexFigure.map((vertex, index) => {
 			let base = Polygon.withSideLength(1.0, vertex);
 			
 			// First translate so that one of the corners of this polygon is coincident 
@@ -56,20 +58,22 @@ export class Tiling {
 
 			return base;
 		});
+		this._vertexFigurePolygons.forEach(polygon => polygon.scale(scale));
 
-		this._polygons.forEach(polygon => polygon.scale(20.0));
+		// Compute lattice vectors
+		this._latticeVector1 = new Vector(0.0, 0.0, 0.0);
+		this._latticeVector2 = new Vector(0.0, 0.0, 0.0);
 
-		let latticeVector1 = new Vector(0.0, 0.0, 0.0);
-		let latticeVector2 = new Vector(0.0, 0.0, 0.0);
 		this._latticePatch.i1.forEach(entry => {
-			latticeVector1.x += Math.cos(entry);
-			latticeVector1.y += Math.sin(entry);
+			this._latticeVector1.x += Math.cos(entry * Math.PI);
+			this._latticeVector1.y += Math.sin(entry * Math.PI);
 		});
 		this._latticePatch.i2.forEach(entry => {
-			latticeVector2.x += Math.cos(entry);
-			latticeVector2.y += Math.sin(entry);
-		});
+			this._latticeVector2.x += Math.cos(entry * Math.PI);
+			this._latticeVector2.y += Math.sin(entry * Math.PI);
+		});	
 
+		// Compute polygons that form a single lattice patch
 		this._latticePolygons = this._latticePatch.polygons.map((polygon, index) => {
 			let base = Polygon.withSideLength(1.0, polygon.n);
 
@@ -85,10 +89,9 @@ export class Tiling {
 				base.move(new Vector(-Math.cos(entry * Math.PI), -Math.sin(entry * Math.PI), 0.0));
 			});
 
-
-
 			return base;
 		});
+		this._latticePolygons.forEach(polygon => polygon.scale(scale));
 	}
 
 	render(x, y) {
@@ -101,40 +104,62 @@ export class Tiling {
 		this._graphics = new PIXI.Graphics();
 
 		this._graphics.lineStyle(0.25, 0xffffff);
-		// this._polygons.forEach((polygon, index) => {
-		// 	const flatPoints = polygon.points
-		// 		.map(point => {
-		// 			return [point.x, point.y];
-		// 		})
-		// 		.flat();
-		// 		console.log(flatPoints);
-		// 	const percent = 1.0 / (index + 1.0);
-		// 	this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xed8345, percent));
-		// 	this._graphics.drawPolygon(flatPoints);
-		// 	this._graphics.endFill();
-		// });
 
-		this._latticePolygons.forEach((polygon, index) => {
+		this._vertexFigurePolygons.forEach((polygon, index) => {
 			const flatPoints = polygon.points
 				.map(point => {
-					return [point.x * 20.0, point.y * 20.0];
+					const yOffset = y < 100 ? 80.0 : 120.0;
+					return [point.x - 0.0, point.y + yOffset];
 				})
 				.flat();
-			console.log(flatPoints);
-
 			const percent = 1.0 / (index + 1.0);
-			this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xed8345, percent));
+			this._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
 			this._graphics.drawPolygon(flatPoints);
 			this._graphics.endFill();
 		});
-		
-		this._graphics.beginFill(0xed8345);
-		this._graphics.drawCircle(0.0, 0.0, 1.0);
-		this._graphics.endFill();
 
+		const rows = 2;
+		const cols = 3;
+		for (let i = 0; i < rows; i++) {
+			for (let j = 0; j < cols; j++) {
+			
+				let iCentered = i - rows/2;
+				let jCentered = j - cols/2;
+				let offset = this._latticeVector1.multiplyScalar(iCentered).add(this._latticeVector2.multiplyScalar(jCentered));
+				offset = offset.multiplyScalar(-scale);
+
+				this._latticePolygons.forEach((polygon, index) => {
+
+					const flatPoints = polygon.points
+						.map(point => {
+							return [point.x + offset.x, point.y + offset.y];
+						})
+						.flat();
+
+					let percent = ((i + j) * this._latticePolygons.length + index) / (rows * cols * this._latticePolygons.length);
+					this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
+					this._graphics.drawPolygon(flatPoints);
+					this._graphics.endFill();
+
+					// Draw the (local) origin of each lattice patch
+					// this._graphics.beginFill(0xed8345);
+					// this._graphics.drawCircle(offset.x, offset.y, 2.0);
+					// this._graphics.endFill();
+				});
+				
+
+			}
+		}
+
+		// Draw the origin
+		// this._graphics.lineStyle(0, 0xffffff);
+		// this._graphics.beginFill(0x0000000);
+		// this._graphics.drawCircle(0.0, 0.0, 2.0);
+		// this._graphics.endFill();
+		
 		this._graphics.x = windowCenter.x + x;
 		this._graphics.y = windowCenter.y + y;
-		this._graphics.scale.set(0.75);
+		this._graphics.scale.set(1.0);
 
 		window.app.stage.addChild(this._graphics);
 	}

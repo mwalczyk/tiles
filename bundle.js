@@ -1773,7 +1773,7 @@ PIXI.Graphics.prototype.dashedLineTo = function (toX, toY) {
 
 var app = new PIXI.Application({
   width: 512,
-  height: 512,
+  height: 720,
   antialias: true,
   resolution: 2
 });
@@ -1845,13 +1845,15 @@ function add(e) {
       }
     });
   }
-}
+} // Create all lattice patches
+
 
 var tilings = [];
 
 for (var patch in lattice.latticePatches) {
   tilings.push(new _tiling.Tiling(patch));
-}
+} //let tilings = [new Tiling("3.3.4.3.4")];
+
 
 function update(e) {
   // tiles.forEach((tile, index) => {
@@ -1875,10 +1877,9 @@ function update(e) {
   // 	tile.render();
   // });
   tilings.forEach(function (tile, index) {
-    //		tile.render(0, 0)
     var x = index % 4.0 - 1.5;
-    var y = Math.floor(index / 4.0) - 1.5;
-    tile.render(x * 100.0, y * 100.0);
+    var y = Math.floor(index / 4.0) - 1.25;
+    tile.render(x * 120.0, y * 220.0); //tile.render(0.0, 0.0);
   });
 } // Call this once to kick off the app
 
@@ -2129,7 +2130,7 @@ var latticePatches = {
   "4.6.12": {
     vertexFigure: [4, 6, 12],
     i1: [0.0, -1.0 / 6.0, 1.0 / 6.0, 1.0 / 2.0, 1.0 / 3.0, 1.0 / 6.0],
-    i2: [1.0 / 6.0, 1.0 / 3.0, 1.0 / 2.0, 2.0 / 3.0, 5.0 / 6.0],
+    i2: [1.0 / 6.0, 1.0 / 3.0, 1.0 / 2.0, 2.0 / 3.0, 5.0 / 6.0, 1.0 / 2.0],
     polygons: [{
       n: 4,
       offset: [],
@@ -46199,6 +46200,7 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 
 var vertexFigures = [[3, 3, 3, 3, 3, 3], [3, 3, 3, 3, 6], [3, 3, 3, 4, 4], [3, 3, 4, 3, 4], [3, 3, 4, 12], [3, 4, 3, 12], [3, 3, 6, 6], [3, 6, 3, 6], [3, 4, 4, 6], [3, 4, 6, 4], [3, 12, 12], [4, 4, 4, 4], [4, 6, 12], [4, 8, 8], [6, 6, 6]];
 exports.vertexFigures = vertexFigures;
+var scale = 10.0;
 
 var Tiling =
 /*#__PURE__*/
@@ -46222,8 +46224,10 @@ function () {
   _createClass(Tiling, [{
     key: "assemble",
     value: function assemble() {
+      var _this = this;
+
       var sum = 0.0;
-      this._polygons = this._vertexFigure.map(function (vertex, index) {
+      this._vertexFigurePolygons = this._vertexFigure.map(function (vertex, index) {
         var base = _polygon.Polygon.withSideLength(1.0, vertex); // First translate so that one of the corners of this polygon is coincident 
         // with the origin then rotate around the origin
 
@@ -46236,22 +46240,24 @@ function () {
         return base;
       });
 
-      this._polygons.forEach(function (polygon) {
-        return polygon.scale(20.0);
-      });
+      this._vertexFigurePolygons.forEach(function (polygon) {
+        return polygon.scale(scale);
+      }); // Compute lattice vectors
 
-      var latticeVector1 = new _vector.Vector(0.0, 0.0, 0.0);
-      var latticeVector2 = new _vector.Vector(0.0, 0.0, 0.0);
+
+      this._latticeVector1 = new _vector.Vector(0.0, 0.0, 0.0);
+      this._latticeVector2 = new _vector.Vector(0.0, 0.0, 0.0);
 
       this._latticePatch.i1.forEach(function (entry) {
-        latticeVector1.x += Math.cos(entry);
-        latticeVector1.y += Math.sin(entry);
+        _this._latticeVector1.x += Math.cos(entry * Math.PI);
+        _this._latticeVector1.y += Math.sin(entry * Math.PI);
       });
 
       this._latticePatch.i2.forEach(function (entry) {
-        latticeVector2.x += Math.cos(entry);
-        latticeVector2.y += Math.sin(entry);
-      });
+        _this._latticeVector2.x += Math.cos(entry * Math.PI);
+        _this._latticeVector2.y += Math.sin(entry * Math.PI);
+      }); // Compute polygons that form a single lattice patch
+
 
       this._latticePolygons = this._latticePatch.polygons.map(function (polygon, index) {
         var base = _polygon.Polygon.withSideLength(1.0, polygon.n);
@@ -46267,53 +46273,83 @@ function () {
         });
         return base;
       });
+
+      this._latticePolygons.forEach(function (polygon) {
+        return polygon.scale(scale);
+      });
     }
   }, {
     key: "render",
     value: function render(x, y) {
-      var _this = this;
+      var _this2 = this;
 
       var windowCenter = new _point.Point(window.app.renderer.view.width * 0.25, window.app.renderer.view.height * 0.25, 0.0);
       this._graphics = new PIXI.Graphics();
 
-      this._graphics.lineStyle(0.25, 0xffffff); // this._polygons.forEach((polygon, index) => {
-      // 	const flatPoints = polygon.points
-      // 		.map(point => {
-      // 			return [point.x, point.y];
-      // 		})
-      // 		.flat();
-      // 		console.log(flatPoints);
-      // 	const percent = 1.0 / (index + 1.0);
-      // 	this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xed8345, percent));
-      // 	this._graphics.drawPolygon(flatPoints);
-      // 	this._graphics.endFill();
-      // });
+      this._graphics.lineStyle(0.25, 0xffffff);
 
-
-      this._latticePolygons.forEach(function (polygon, index) {
+      this._vertexFigurePolygons.forEach(function (polygon, index) {
         var flatPoints = polygon.points.map(function (point) {
-          return [point.x * 20.0, point.y * 20.0];
+          var yOffset = y < 100 ? 80.0 : 120.0;
+          return [point.x - 0.0, point.y + yOffset];
         }).flat();
-        console.log(flatPoints);
         var percent = 1.0 / (index + 1.0);
 
-        _this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xed8345, percent));
+        _this2._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
 
-        _this._graphics.drawPolygon(flatPoints);
+        _this2._graphics.drawPolygon(flatPoints);
 
-        _this._graphics.endFill();
+        _this2._graphics.endFill();
       });
 
-      this._graphics.beginFill(0xed8345);
+      var rows = 2;
+      var cols = 3;
 
-      this._graphics.drawCircle(0.0, 0.0, 1.0);
+      var _loop = function _loop(i) {
+        var _loop2 = function _loop2(j) {
+          var iCentered = i - rows / 2;
+          var jCentered = j - cols / 2;
 
-      this._graphics.endFill();
+          var offset = _this2._latticeVector1.multiplyScalar(iCentered).add(_this2._latticeVector2.multiplyScalar(jCentered));
+
+          offset = offset.multiplyScalar(-scale);
+
+          _this2._latticePolygons.forEach(function (polygon, index) {
+            var flatPoints = polygon.points.map(function (point) {
+              return [point.x + offset.x, point.y + offset.y];
+            }).flat();
+            var percent = ((i + j) * _this2._latticePolygons.length + index) / (rows * cols * _this2._latticePolygons.length);
+
+            _this2._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
+
+            _this2._graphics.drawPolygon(flatPoints);
+
+            _this2._graphics.endFill(); // Draw the (local) origin of each lattice patch
+            // this._graphics.beginFill(0xed8345);
+            // this._graphics.drawCircle(offset.x, offset.y, 2.0);
+            // this._graphics.endFill();
+
+          });
+        };
+
+        for (var j = 0; j < cols; j++) {
+          _loop2(j);
+        }
+      };
+
+      for (var i = 0; i < rows; i++) {
+        _loop(i);
+      } // Draw the origin
+      // this._graphics.lineStyle(0, 0xffffff);
+      // this._graphics.beginFill(0x0000000);
+      // this._graphics.drawCircle(0.0, 0.0, 2.0);
+      // this._graphics.endFill();
+
 
       this._graphics.x = windowCenter.x + x;
       this._graphics.y = windowCenter.y + y;
 
-      this._graphics.scale.set(0.75);
+      this._graphics.scale.set(1.0);
 
       window.app.stage.addChild(this._graphics);
     }
