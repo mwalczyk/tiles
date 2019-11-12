@@ -33,8 +33,8 @@ export class Tiling {
 	 * the 11 known Archimedean tilings above
 	 *
 	 */
-	constructor(figureIndex) {
-		this._latticePatch = lattice.latticePatches["4.8.8"];
+	constructor(patch) {
+		this._latticePatch = lattice.latticePatches[patch];
 		this._vertexFigure = this._latticePatch.vertexFigure;
 
 		this.assemble();

@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 
+import * as lattice from "./lattice";
 import { Point } from "./src/point";
 import { Tile } from "./tile";
 import { Tiling, vertexFigures } from "./tiling";
@@ -111,13 +112,11 @@ function add(e) {
 	}
 }
 
-let tilings = [
-	new Tiling(0)
-];
+let tilings = []
 
-// for (let i = 0; i < 15; i++) {
-// 	tilings.push(new Tiling(i));
-// }
+for (let patch in lattice.latticePatches) {
+	tilings.push(new Tiling(patch));
+}
 
 function update(e) {
 	// tiles.forEach((tile, index) => {
@@ -148,11 +147,11 @@ function update(e) {
 	// });
 	tilings.forEach((tile, index) => {
 
-		tile.render(0, 0)
-		// let x = (index % 4.0) - 1.5;
-		// let y = Math.floor(index / 4.0) - 1.5;
+//		tile.render(0, 0)
+		let x = (index % 4.0) - 1.5;
+		let y = Math.floor(index / 4.0) - 1.5;
 
-		// tile.render(x * 100.0, y * 100.0);
+		tile.render(x * 100.0, y * 100.0);
 
 	});
 }

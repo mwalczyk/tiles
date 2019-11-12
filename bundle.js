@@ -1736,6 +1736,8 @@ module.exports = {
 
 var PIXI = _interopRequireWildcard(require("pixi.js"));
 
+var lattice = _interopRequireWildcard(require("./lattice"));
+
 var _point = require("./src/point");
 
 var _tile = require("./tile");
@@ -1845,9 +1847,11 @@ function add(e) {
   }
 }
 
-var tilings = [new _tiling.Tiling(0)]; // for (let i = 0; i < 15; i++) {
-// 	tilings.push(new Tiling(i));
-// }
+var tilings = [];
+
+for (var patch in lattice.latticePatches) {
+  tilings.push(new _tiling.Tiling(patch));
+}
 
 function update(e) {
   // tiles.forEach((tile, index) => {
@@ -1871,16 +1875,17 @@ function update(e) {
   // 	tile.render();
   // });
   tilings.forEach(function (tile, index) {
-    tile.render(0, 0); // let x = (index % 4.0) - 1.5;
-    // let y = Math.floor(index / 4.0) - 1.5;
-    // tile.render(x * 100.0, y * 100.0);
+    //		tile.render(0, 0)
+    var x = index % 4.0 - 1.5;
+    var y = Math.floor(index / 4.0) - 1.5;
+    tile.render(x * 100.0, y * 100.0);
   });
 } // Call this once to kick off the app
 
 
 update();
 
-},{"./src/point":56,"./src/vector":59,"./tile":60,"./tiling":61,"pixi.js":52}],10:[function(require,module,exports){
+},{"./lattice":10,"./src/point":56,"./src/vector":59,"./tile":60,"./tiling":61,"pixi.js":52}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1900,6 +1905,26 @@ var latticePatches = {
       n: 3,
       offset: [0.0],
       rotation: 1.0 / 3.0
+    }]
+  },
+  "4.4.4.4": {
+    vertexFigure: [4, 4, 4, 4],
+    i1: [0.0],
+    i2: [1.0 / 2.0],
+    polygons: [{
+      n: 4,
+      offset: [],
+      rotation: 0.0
+    }]
+  },
+  "6.6.6": {
+    vertexFigure: [6, 6, 6],
+    i1: [0.0, 1.0 / 3.0],
+    i2: [2.0 / 3.0, 1.0 / 3.0],
+    polygons: [{
+      n: 6,
+      offset: [],
+      rotation: 0.0
     }]
   },
   "3.3.3.3.6": {
@@ -46186,10 +46211,10 @@ function () {
    * the 11 known Archimedean tilings above
    *
    */
-  function Tiling(figureIndex) {
+  function Tiling(patch) {
     _classCallCheck(this, Tiling);
 
-    this._latticePatch = lattice.latticePatches["4.8.8"];
+    this._latticePatch = lattice.latticePatches[patch];
     this._vertexFigure = this._latticePatch.vertexFigure;
     this.assemble();
   }

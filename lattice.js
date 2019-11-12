@@ -16,7 +16,30 @@ export const latticePatches = {
 			}
 		]
 	},
-
+	"4.4.4.4": {
+		vertexFigure: [4, 4, 4, 4],
+		i1: [0.0],
+		i2: [1.0 / 2.0],
+		polygons: [
+			{
+				n: 4,
+				offset: [],
+				rotation: 0.0
+			}
+		]
+	},
+	"6.6.6": {
+		vertexFigure: [6, 6, 6],
+		i1: [0.0, 1.0 / 3.0],
+		i2: [2.0 / 3.0, 1.0 / 3.0],
+		polygons: [
+			{
+				n: 6,
+				offset: [],
+				rotation: 0.0
+			}
+		]
+	},
 	"3.3.3.3.6": {
 		vertexFigure: [3, 3, 3, 3, 6],
 		i1: [0.0, 0.0, 1.0 / 3.0],
@@ -320,4 +343,4 @@ export const latticePatches = {
 			}
 		]
 	}
-}
+};
