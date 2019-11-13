@@ -46169,9 +46169,12 @@ function () {
       var _this2 = this;
 
       var windowCenter = new _point.Point(window.app.renderer.view.width * 0.25, window.app.renderer.view.height * 0.25, 0.0);
+      var background = 0xd1cac9;
+      var orange = 0xfe8102;
       this._graphics = new PIXI.Graphics();
 
-      this._graphics.lineStyle(0.25, 0xffffff);
+      this._graphics.lineStyle(0.25, 0xffffff); //this._graphics.lineStyle(1.0, orange);
+
 
       this._vertexFigurePolygons.forEach(function (polygon, index) {
         var flatPoints = polygon.points.map(function (point) {
@@ -46179,9 +46182,9 @@ function () {
 
           return [point.x - 0.0, point.y + yOffset];
         }).flat();
-        var percent = 1.0 / (index + 1.0);
+        var percent = 1.0 / (index + 1.0); //this._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
 
-        _this2._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
+        _this2._graphics.beginFill(background);
 
         _this2._graphics.drawPolygon(flatPoints);
 
@@ -46189,37 +46192,15 @@ function () {
       });
 
       var rows = 2;
-      var cols = 3; // for (let i = 0; i < rows; i++) {
-      // 	for (let j = 0; j < cols; j++) {
-      // 		let iCentered = i - rows/2;
-      // 		let jCentered = j - cols/2;
-      // 		let offset = this._latticeVector1.multiplyScalar(iCentered).add(this._latticeVector2.multiplyScalar(jCentered));
-      // 		offset = offset.multiplyScalar(-scale);
-      // 		this._latticePolygons.forEach((polygon, index) => {
-      // 			const flatPoints = polygon.points
-      // 				.map(point => {
-      // 					return [point.x + offset.x, point.y + offset.y];
-      // 				})
-      // 				.flat();
-      // 			let percent = ((i + j) * this._latticePolygons.length + index) / (rows * cols * this._latticePolygons.length);
-      // 			this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
-      // 			this._graphics.drawPolygon(flatPoints);
-      // 			this._graphics.endFill();
-      // 			// Draw the (local) origin of each lattice patch
-      // 			// this._graphics.beginFill(0xed8345);
-      // 			// this._graphics.drawCircle(offset.x, offset.y, 2.0);
-      // 			// this._graphics.endFill();
-      // 		});
-      // 	}
-      // }
+      var cols = 3;
 
       this._polygons.forEach(function (polygon, index) {
         var flatPoints = polygon.points.map(function (point) {
           return [point.x, point.y];
         }).flat();
-        var percent = index / (rows * cols * _this2._latticePolygons.length);
+        var percent = index / (rows * cols * _this2._latticePolygons.length); //this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
 
-        _this2._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
+        _this2._graphics.beginFill(background);
 
         _this2._graphics.drawPolygon(flatPoints);
 

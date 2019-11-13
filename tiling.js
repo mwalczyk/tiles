@@ -136,10 +136,13 @@ export class Tiling {
 			window.app.renderer.view.height * 0.25,
 			0.0
 		);
+		const background = 0xd1cac9;
+		const orange = 0xfe8102;
 
 		this._graphics = new PIXI.Graphics();
 
 		this._graphics.lineStyle(0.25, 0xffffff);
+		//this._graphics.lineStyle(1.0, orange);
 
 		this._vertexFigurePolygons.forEach((polygon, index) => {
 			const flatPoints = polygon.points
@@ -149,41 +152,14 @@ export class Tiling {
 				})
 				.flat();
 			const percent = 1.0 / (index + 1.0);
-			this._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
+			//this._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
+			this._graphics.beginFill(background);
 			this._graphics.drawPolygon(flatPoints);
 			this._graphics.endFill();
 		});
 
 		const rows = 2;
 		const cols = 3;
-		// for (let i = 0; i < rows; i++) {
-		// 	for (let j = 0; j < cols; j++) {
-			
-		// 		let iCentered = i - rows/2;
-		// 		let jCentered = j - cols/2;
-		// 		let offset = this._latticeVector1.multiplyScalar(iCentered).add(this._latticeVector2.multiplyScalar(jCentered));
-		// 		offset = offset.multiplyScalar(-scale);
-
-		// 		this._latticePolygons.forEach((polygon, index) => {
-
-		// 			const flatPoints = polygon.points
-		// 				.map(point => {
-		// 					return [point.x + offset.x, point.y + offset.y];
-		// 				})
-		// 				.flat();
-
-		// 			let percent = ((i + j) * this._latticePolygons.length + index) / (rows * cols * this._latticePolygons.length);
-		// 			this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
-		// 			this._graphics.drawPolygon(flatPoints);
-		// 			this._graphics.endFill();
-
-		// 			// Draw the (local) origin of each lattice patch
-		// 			// this._graphics.beginFill(0xed8345);
-		// 			// this._graphics.drawCircle(offset.x, offset.y, 2.0);
-		// 			// this._graphics.endFill();
-		// 		});
-		// 	}
-		// }
 
 		this._polygons.forEach((polygon, index) => {
 			const flatPoints = polygon.points
@@ -193,7 +169,8 @@ export class Tiling {
 				.flat();
 
 			let percent = (index) / (rows * cols * this._latticePolygons.length);
-			this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
+			//this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
+			this._graphics.beginFill(background);
 			this._graphics.drawPolygon(flatPoints);
 			this._graphics.endFill();
 
