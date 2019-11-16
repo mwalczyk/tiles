@@ -6,24 +6,6 @@ import { Vector } from "./src/vector";
 import * as utils from "./src/utils";
 import * as lattice from "./lattice";
 
-export const vertexFigures = [
-	 [3, 3, 3, 3, 3, 3],
-	 [3, 3, 3, 3, 6],
-	 [3, 3, 3, 4, 4],
-	 [3, 3, 4, 3, 4],
-	 [3, 3, 4, 12],
-	 [3, 4, 3, 12],
-	 [3, 3, 6, 6],
-	 [3, 6, 3, 6],
-	 [3, 4, 4, 6],
-	 [3, 4, 6, 4],
-	 [3, 12, 12],
-	 [4, 4, 4, 4],
-	 [4, 6, 12],
-	 [4, 8, 8],
-	 [6, 6, 6]
-];
-
 const scale = 10.0;
 
 export class Tiling {
@@ -35,8 +17,14 @@ export class Tiling {
 	 * the 11 known Archimedean tilings above
 	 *
 	 */
-	constructor(patch) {
+	constructor(patch, rows=2, columns=3) {
+		this._rows = rows;
+		this._columns = columns;
+
+		// One tile-able patch of the tiling
 		this._latticePatch = lattice.latticePatches[patch];
+
+		// Get the vertex figure that corresponds to this tiling
 		this._vertexFigure = this._latticePatch.vertexFigure;
 
 		this.assemble();
@@ -77,39 +65,37 @@ export class Tiling {
 		this._latticePolygons = this._latticePatch.polygons.map((polygon, index) => {
 			let base = Polygon.withSideLength(1.0, polygon.n);
 
+			// Calculate the circumradius and interior angle of this polygon
 			let circumradius = 0.5 / Math.sin(Math.PI / polygon.n);
 			let interiorAngle = ((polygon.n - 2) * Math.PI) / polygon.n;
 
-			// Pin the rotation pivot
+			// Translate the polygon so that its first vertex coincides with the origin
 			base.move(new Vector(-circumradius, 0.0, 0.0));
-			base.rotate(interiorAngle * 0.5);
+			base.rotate(interiorAngle * 0.5); 
 			base.rotate(polygon.rotation * Math.PI);
 
 			polygon.offset.forEach(entry => {
 				base.move(new Vector(-Math.cos(entry * Math.PI), -Math.sin(entry * Math.PI), 0.0));
 			});
+			base.scale(scale);
 
 			return base;
 		});
-		this._latticePolygons.forEach(polygon => polygon.scale(scale));
-
 
 		// Generate the full tiling (or at least, a couple rows and columns)
 		this._polygons = [];
-		const rows = 2;
-		const cols = 3;
-		for (let i = 0; i < rows; i++) {
-			for (let j = 0; j < cols; j++) {
+		for (let i = 0; i < this._rows; i++) {
+			for (let j = 0; j < this._columns; j++) {
 			
-				let iCentered = i - rows/2;
-				let jCentered = j - cols/2;
+				let iCentered = i - this._rows / 2;
+				let jCentered = j - this._columns / 2;
 				let offset = this._latticeVector1.multiplyScalar(iCentered).add(this._latticeVector2.multiplyScalar(jCentered));
 				offset = offset.multiplyScalar(-scale);
 
 				this._latticePolygons.forEach((polygon, index) => {
-					let poly = polygon.copy();
-					poly.move(new Vector(offset.x, offset.y, 0.0));
-					this._polygons.push(poly);
+					let tilePolygon = polygon.copy();
+					tilePolygon.move(new Vector(offset.x, offset.y - 6, 0.0));
+					this._polygons.push(tilePolygon);
 
 				});
 				
@@ -140,26 +126,23 @@ export class Tiling {
 		const orange = 0xfe8102;
 
 		this._graphics = new PIXI.Graphics();
-
 		this._graphics.lineStyle(0.25, 0xffffff);
-		//this._graphics.lineStyle(1.0, orange);
 
-		this._vertexFigurePolygons.forEach((polygon, index) => {
-			const flatPoints = polygon.points
-				.map(point => {
-					const yOffset = 120.0;//y < 100 ? 80.0 : 120.0;
-					return [point.x - 0.0, point.y + yOffset];
-				})
-				.flat();
-			const percent = 1.0 / (index + 1.0);
-			//this._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
-			this._graphics.beginFill(background);
-			this._graphics.drawPolygon(flatPoints);
-			this._graphics.endFill();
-		});
-
-		const rows = 2;
-		const cols = 3;
+		if (true) {
+			this._vertexFigurePolygons.forEach((polygon, index) => {
+				const flatPoints = polygon.points
+					.map(point => {
+						const yOffset = 120.0;
+						return [point.x - 0.0, point.y + yOffset];
+					})
+					.flat();
+				const percent = 1.0 / (index + 1.0);
+				//this._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
+				this._graphics.beginFill(background);
+				this._graphics.drawPolygon(flatPoints);
+				this._graphics.endFill();
+			});
+		}
 
 		this._polygons.forEach((polygon, index) => {
 			const flatPoints = polygon.points
@@ -168,7 +151,7 @@ export class Tiling {
 				})
 				.flat();
 
-			let percent = (index) / (rows * cols * this._latticePolygons.length);
+			let percent = (index) / (this._rows * this._columns * this._latticePolygons.length);
 			//this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
 			this._graphics.beginFill(background);
 			this._graphics.drawPolygon(flatPoints);
@@ -176,16 +159,18 @@ export class Tiling {
 
 		});
 
-		// Draw the origin
-		// this._graphics.lineStyle(0, 0xffffff);
-		// this._graphics.beginFill(0x0000000);
-		// this._graphics.drawCircle(0.0, 0.0, 2.0);
-		// this._graphics.endFill();
-		
+		// Position this graphics container
 		this._graphics.x = windowCenter.x + x;
 		this._graphics.y = windowCenter.y + y;
-		this._graphics.scale.set(1.0);
 
 		window.app.stage.addChild(this._graphics);
+	}
+
+	createPrimalGraph() {
+
+	}
+
+	createDualGraph() {
+
 	}
 }

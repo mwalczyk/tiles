@@ -1906,7 +1906,7 @@ var latticePatches = {
       rotation: 0.0
     }]
   },
-  "3.3.3.3.6 version": {
+  "3.3.3.3.6b": {
     vertexFigure: [3, 3, 3, 3, 6],
     i1: [0.0, -1.0 / 3.0, 0.0],
     i2: [2.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0],
@@ -45823,6 +45823,33 @@ function () {
       }
     }
   }, {
+    key: "invertPleat",
+    value: function invertPleat(edgeIndex) {
+      // Reverse the crease assignment as well as the other 2 creases that form this pleat:
+      // the code below works because pleat crease are added in groups of 3
+      this._assignments[edgeIndex] = this._assignments[edgeIndex] === "M" ? "V" : "M";
+
+      switch (edgeIndex % 3) {
+        case 0:
+          // This is the first pleat crease
+          this._assignments[edgeIndex + 1] = this._assignments[edgeIndex + 1] === "M" ? "V" : "M";
+          this._assignments[edgeIndex + 2] = this._assignments[edgeIndex + 2] === "M" ? "V" : "M";
+          break;
+
+        case 1:
+          // This is the crease along the central polygon
+          this._assignments[edgeIndex + 1] = this._assignments[edgeIndex + 1] === "M" ? "V" : "M";
+          this._assignments[edgeIndex - 1] = this._assignments[edgeIndex - 1] === "M" ? "V" : "M";
+          break;
+
+        case 2:
+          // This is the second pleat crease
+          this._assignments[edgeIndex - 1] = this._assignments[edgeIndex - 1] === "M" ? "V" : "M";
+          this._assignments[edgeIndex - 2] = this._assignments[edgeIndex - 2] === "M" ? "V" : "M";
+          break;
+      }
+    }
+  }, {
     key: "render",
     value: function render() {
       var _this2 = this;
@@ -45840,7 +45867,7 @@ function () {
       {
         var tileGraphics = new PIXI.Graphics(); // Draw the tile polygon
 
-        tileGraphics.lineStyle(1, orange);
+        tileGraphics.lineStyle(0.5, orange);
         tileGraphics.beginFill(green);
         tileGraphics.drawPolygon(this._tilePolygon.points.map(function (point) {
           return [point.x, point.y];
@@ -45854,7 +45881,7 @@ function () {
         var vertexGraphics = new PIXI.Graphics();
         vertexGraphics.lineStyle(0);
         vertexGraphics.beginFill(orange);
-        vertexGraphics.drawCircle(vertex.x, vertex.y, 2.0);
+        vertexGraphics.drawCircle(vertex.x, vertex.y, 1.0);
         vertexGraphics.endFill();
         var useText = false;
 
@@ -45903,7 +45930,7 @@ function () {
       });
 
       this._edges.forEach(function (edgeIndices, edgeIndex) {
-        var pleatLineStrokeSize = 1;
+        var pleatLineStrokeSize = 0.5;
         var edgeGraphics = new PIXI.Graphics();
 
         var _edgeIndices = _slicedToArray(edgeIndices, 2),
@@ -45933,15 +45960,14 @@ function () {
         _this2._vertices[b].x + orthogonal.x * customBoundsWidth, _this2._vertices[b].y + orthogonal.y * customBoundsWidth, // 3rd point
         _this2._vertices[b].x - orthogonal.x * customBoundsWidth, _this2._vertices[b].y - orthogonal.y * customBoundsWidth, // 4th point
         _this2._vertices[a].x - orthogonal.x * customBoundsWidth, _this2._vertices[a].y - orthogonal.y * customBoundsWidth];
-        edgeGraphics.hitArea = new PIXI.Polygon(customBounds); // Draw the hit area
-        //edgeGraphics.drawPolygon(edgeGraphics.hitArea);
+        edgeGraphics.hitArea = new PIXI.Polygon(customBounds);
 
         function onDragStart(event) {
           this.alpha = 0.25; // Draw the bounds of this line
 
-          this.drawPolygon(this.hitArea); // Reverse the crease assignment
+          this.drawPolygon(this.hitArea); // Switch crease assignments along this pleat
 
-          this.owner._assignments[this.index] = this.owner._assignments[this.index] === "M" ? "V" : "M";
+          this.owner.invertPleat(this.index);
         }
 
         function onDragEnd() {
@@ -46032,7 +46058,7 @@ exports.Tile = Tile;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Tiling = exports.vertexFigures = void 0;
+exports.Tiling = void 0;
 
 var PIXI = _interopRequireWildcard(require("pixi.js"));
 
@@ -46056,8 +46082,6 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-var vertexFigures = [[3, 3, 3, 3, 3, 3], [3, 3, 3, 3, 6], [3, 3, 3, 4, 4], [3, 3, 4, 3, 4], [3, 3, 4, 12], [3, 4, 3, 12], [3, 3, 6, 6], [3, 6, 3, 6], [3, 4, 4, 6], [3, 4, 6, 4], [3, 12, 12], [4, 4, 4, 4], [4, 6, 12], [4, 8, 8], [6, 6, 6]];
-exports.vertexFigures = vertexFigures;
 var scale = 10.0;
 
 var Tiling =
@@ -46072,9 +46096,16 @@ function () {
    *
    */
   function Tiling(patch) {
+    var rows = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2;
+    var columns = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 3;
+
     _classCallCheck(this, Tiling);
 
-    this._latticePatch = lattice.latticePatches[patch];
+    this._rows = rows;
+    this._columns = columns; // One tile-able patch of the tiling
+
+    this._latticePatch = lattice.latticePatches[patch]; // Get the vertex figure that corresponds to this tiling
+
     this._vertexFigure = this._latticePatch.vertexFigure;
     this.assemble();
   }
@@ -46118,10 +46149,11 @@ function () {
 
 
       this._latticePolygons = this._latticePatch.polygons.map(function (polygon, index) {
-        var base = _polygon.Polygon.withSideLength(1.0, polygon.n);
+        var base = _polygon.Polygon.withSideLength(1.0, polygon.n); // Calculate the circumradius and interior angle of this polygon
+
 
         var circumradius = 0.5 / Math.sin(Math.PI / polygon.n);
-        var interiorAngle = (polygon.n - 2) * Math.PI / polygon.n; // Pin the rotation pivot
+        var interiorAngle = (polygon.n - 2) * Math.PI / polygon.n; // Translate the polygon so that its first vertex coincides with the origin
 
         base.move(new _vector.Vector(-circumradius, 0.0, 0.0));
         base.rotate(interiorAngle * 0.5);
@@ -46129,36 +46161,30 @@ function () {
         polygon.offset.forEach(function (entry) {
           base.move(new _vector.Vector(-Math.cos(entry * Math.PI), -Math.sin(entry * Math.PI), 0.0));
         });
+        base.scale(scale);
         return base;
-      });
-
-      this._latticePolygons.forEach(function (polygon) {
-        return polygon.scale(scale);
       }); // Generate the full tiling (or at least, a couple rows and columns)
 
-
       this._polygons = [];
-      var rows = 2;
-      var cols = 3;
 
-      for (var i = 0; i < rows; i++) {
+      for (var i = 0; i < this._rows; i++) {
         var _loop = function _loop(j) {
-          var iCentered = i - rows / 2;
-          var jCentered = j - cols / 2;
+          var iCentered = i - _this._rows / 2;
+          var jCentered = j - _this._columns / 2;
 
           var offset = _this._latticeVector1.multiplyScalar(iCentered).add(_this._latticeVector2.multiplyScalar(jCentered));
 
           offset = offset.multiplyScalar(-scale);
 
           _this._latticePolygons.forEach(function (polygon, index) {
-            var poly = polygon.copy();
-            poly.move(new _vector.Vector(offset.x, offset.y, 0.0));
+            var tilePolygon = polygon.copy();
+            tilePolygon.move(new _vector.Vector(offset.x, offset.y - 6, 0.0));
 
-            _this._polygons.push(poly);
+            _this._polygons.push(tilePolygon);
           });
         };
 
-        for (var j = 0; j < cols; j++) {
+        for (var j = 0; j < this._columns; j++) {
           _loop(j);
         }
       }
@@ -46173,52 +46199,48 @@ function () {
       var orange = 0xfe8102;
       this._graphics = new PIXI.Graphics();
 
-      this._graphics.lineStyle(0.25, 0xffffff); //this._graphics.lineStyle(1.0, orange);
+      this._graphics.lineStyle(0.25, 0xffffff);
 
+      if (true) {
+        this._vertexFigurePolygons.forEach(function (polygon, index) {
+          var flatPoints = polygon.points.map(function (point) {
+            var yOffset = 120.0;
+            return [point.x - 0.0, point.y + yOffset];
+          }).flat();
+          var percent = 1.0 / (index + 1.0); //this._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
 
-      this._vertexFigurePolygons.forEach(function (polygon, index) {
-        var flatPoints = polygon.points.map(function (point) {
-          var yOffset = 120.0; //y < 100 ? 80.0 : 120.0;
+          _this2._graphics.beginFill(background);
 
-          return [point.x - 0.0, point.y + yOffset];
-        }).flat();
-        var percent = 1.0 / (index + 1.0); //this._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
+          _this2._graphics.drawPolygon(flatPoints);
 
-        _this2._graphics.beginFill(background);
-
-        _this2._graphics.drawPolygon(flatPoints);
-
-        _this2._graphics.endFill();
-      });
-
-      var rows = 2;
-      var cols = 3;
+          _this2._graphics.endFill();
+        });
+      }
 
       this._polygons.forEach(function (polygon, index) {
         var flatPoints = polygon.points.map(function (point) {
           return [point.x, point.y];
         }).flat();
-        var percent = index / (rows * cols * _this2._latticePolygons.length); //this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
+        var percent = index / (_this2._rows * _this2._columns * _this2._latticePolygons.length); //this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
 
         _this2._graphics.beginFill(background);
 
         _this2._graphics.drawPolygon(flatPoints);
 
         _this2._graphics.endFill();
-      }); // Draw the origin
-      // this._graphics.lineStyle(0, 0xffffff);
-      // this._graphics.beginFill(0x0000000);
-      // this._graphics.drawCircle(0.0, 0.0, 2.0);
-      // this._graphics.endFill();
+      }); // Position this graphics container
 
 
       this._graphics.x = windowCenter.x + x;
       this._graphics.y = windowCenter.y + y;
-
-      this._graphics.scale.set(1.0);
-
       window.app.stage.addChild(this._graphics);
     }
+  }, {
+    key: "createPrimalGraph",
+    value: function createPrimalGraph() {}
+  }, {
+    key: "createDualGraph",
+    value: function createDualGraph() {}
   }, {
     key: "vertexFigurePolygons",
     get: function get() {

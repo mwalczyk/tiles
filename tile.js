@@ -132,7 +132,6 @@ export class Tile {
 		// tile's crease pattern
 		this._vertices = [];
 
-
 		pleatLines.forEach((line, index) => {
 			// The index of the edge of the tile polygon from which this pleat emanates
 			let edgeIndex = Math.floor(index / 2);
@@ -185,6 +184,30 @@ export class Tile {
 		}
 	}
 
+	invertPleat(edgeIndex) {
+		// Reverse the crease assignment as well as the other 2 creases that form this pleat:
+		// the code below works because pleat crease are added in groups of 3
+		this._assignments[edgeIndex] = this._assignments[edgeIndex] === "M" ? "V" : "M";
+
+		switch (edgeIndex % 3) {
+			case 0:
+				// This is the first pleat crease
+				this._assignments[edgeIndex + 1] = this._assignments[edgeIndex + 1] === "M" ? "V" : "M";
+				this._assignments[edgeIndex + 2] = this._assignments[edgeIndex + 2] === "M" ? "V" : "M";
+				break;
+			case 1:
+				// This is the crease along the central polygon
+				this._assignments[edgeIndex + 1] = this._assignments[edgeIndex + 1] === "M" ? "V" : "M";
+				this._assignments[edgeIndex - 1] = this._assignments[edgeIndex - 1] === "M" ? "V" : "M";
+				break;
+			case 2:
+				// This is the second pleat crease
+				this._assignments[edgeIndex - 1] = this._assignments[edgeIndex - 1] === "M" ? "V" : "M";
+				this._assignments[edgeIndex - 2] = this._assignments[edgeIndex - 2] === "M" ? "V" : "M";
+				break;
+		}
+	}
+
 	render() {
 		const green = 0xc9ece4;
 		const orange = 0xfe8102;
@@ -199,7 +222,7 @@ export class Tile {
 			let tileGraphics = new PIXI.Graphics();
 
 			// Draw the tile polygon
-			tileGraphics.lineStyle(1, orange);
+			tileGraphics.lineStyle(0.5, orange);
 			tileGraphics.beginFill(green);
 			tileGraphics.drawPolygon(
 				this._tilePolygon.points
@@ -222,7 +245,7 @@ export class Tile {
 			vertexGraphics.drawCircle(
 				vertex.x,
 				vertex.y,
-				2.0
+				1.0
 			);
 			vertexGraphics.endFill();
 
@@ -273,7 +296,7 @@ export class Tile {
 		});
 	
 		this._edges.forEach((edgeIndices, edgeIndex) => {
-			const pleatLineStrokeSize = 1;
+			const pleatLineStrokeSize = 0.5;
 			let edgeGraphics = new PIXI.Graphics();
 
 			const [a, b] = edgeIndices;
@@ -327,18 +350,14 @@ export class Tile {
 
 			edgeGraphics.hitArea = new PIXI.Polygon(customBounds);
 
-			// Draw the hit area
-			//edgeGraphics.drawPolygon(edgeGraphics.hitArea);
-
 			function onDragStart(event) {
 				this.alpha = 0.25;
 
 				// Draw the bounds of this line
 				this.drawPolygon(this.hitArea);
 
-				// Reverse the crease assignment
-				this.owner._assignments[this.index] =
-					this.owner._assignments[this.index] === "M" ? "V" : "M";
+				// Switch crease assignments along this pleat
+				this.owner.invertPleat(this.index);
 			}
 
 			function onDragEnd() {
