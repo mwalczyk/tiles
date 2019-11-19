@@ -136,8 +136,7 @@ export class Tiling {
 						return [point.x, point.y + yOffset];
 					})
 					.flat();
-				const percent = 1.0 / (index + 1.0);
-				//this._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
+					
 				this._graphics.beginFill(background);
 				this._graphics.drawPolygon(flatPoints);
 				this._graphics.endFill();
@@ -152,8 +151,6 @@ export class Tiling {
 				})
 				.flat();
 
-			let percent = (index) / (this._rows * this._columns * this._latticePolygons.length);
-			//this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
 			this._graphics.beginFill(background);
 			this._graphics.drawPolygon(flatPoints);
 			this._graphics.endFill();

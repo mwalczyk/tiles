@@ -46225,7 +46225,6 @@ function () {
             var yOffset = 120.0;
             return [point.x, point.y + yOffset];
           }).flat();
-          var percent = 1.0 / (index + 1.0); //this._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
 
           _this2._graphics.beginFill(background);
 
@@ -46240,7 +46239,6 @@ function () {
         var flatPoints = polygon.points.map(function (point) {
           return [point.x, point.y];
         }).flat();
-        var percent = index / (_this2._rows * _this2._columns * _this2._latticePolygons.length); //this._graphics.beginFill(utils.lerpColor(0xeb5036, 0xede240, percent));
 
         _this2._graphics.beginFill(background);
 
