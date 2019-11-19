@@ -1750,6 +1750,14 @@ function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return 
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; if (obj != null) { var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
+
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
+
 PIXI.Graphics.prototype.dashedLineTo = function (toX, toY) {
   var dash = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 2;
   var gap = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 2;
@@ -1782,41 +1790,49 @@ document.body.appendChild(app.view);
 window.app = app;
 var inputW = document.getElementById("input_w");
 var inputTau = document.getElementById("input_tau");
+var divDropdown = document.getElementById("div_dropdown");
 var pCurrentTwistAngle = document.getElementById("p_current_twist_angle");
 var pSafeTwistAngle = document.getElementById("p_safe_twist_angle");
 inputW.addEventListener("input", update);
 inputTau.addEventListener("input", update);
-var windowCenter = new _point.Point(window.app.renderer.view.width * 0.25, window.app.renderer.view.height * 0.25, 0.0); // Create all lattice patches
-// let tilings = []
-// for (let patch in lattice.latticePatches) {
-// 	tilings.push(new Tiling(patch));
-// }
+var windowCenter = new _point.Point(app.renderer.view.width * 0.5 / app.renderer.resolution, app.renderer.view.height * 0.5 / app.renderer.resolution, 0.0);
+var currentTiling = "4.6.12";
+var tiling = new _tiling.Tiling(currentTiling);
+var twistTiles = [];
+build();
 
-var tilings = [new _tiling.Tiling("4.6.12")];
-var twistTiles = tilings[0].polygons.map(function (polygon, index) {
-  return new _tile.Tile(polygon, true);
+function build() {
+  // Clear all graphics objects from the stage
+  app.stage.removeChildren(); // Build the tiling (lattice patch, etc.)
+
+  tiling = new _tiling.Tiling(currentTiling); // From the polygons of the tiling, build twist tiles
+
+  twistTiles = tiling.polygons.map(function (polygon, index) {
+    return new _tile.Tile(polygon);
+  });
+} // Whenever one of the drop-down menu items is clicked, we need to rebuild
+// the tiling and draw it 
+
+
+_toConsumableArray(document.getElementsByClassName("tiling")).forEach(function (tilingOption) {
+  tilingOption.addEventListener("click", function (event) {
+    currentTiling = event.target.innerHTML;
+    build();
+    update();
+  });
 });
 
-function update(e) {
+function update() {
   twistTiles.forEach(function (tile, index) {
-    if (true) {
-      var percent = index / twistTiles.length; // Set tile parameters
-
-      tile.w = parseFloat(inputW.value);
-      tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);
-      tile.buildVertices();
-      pCurrentTwistAngle.innerHTML = "Current twist angle: ".concat((tile.alpha * (180.0 / Math.PI)).toFixed(2), " Degrees");
-      pSafeTwistAngle.innerHTML = "Safe twist angle: ".concat((tile.alphaSafe * (180.0 / Math.PI)).toFixed(2), " Degrees");
-    }
-
+    // Set tile parameters
+    tile.w = parseFloat(inputW.value);
+    tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);
+    tile.buildVertices();
+    pCurrentTwistAngle.innerHTML = "Current twist angle: ".concat((tile.alpha * (180.0 / Math.PI)).toFixed(2), " Degrees");
+    pSafeTwistAngle.innerHTML = "Safe twist angle: ".concat((tile.alphaSafe * (180.0 / Math.PI)).toFixed(2), " Degrees");
     tile.render();
   });
-  tilings.forEach(function (tile, index) {
-    // let x = (index % 4.0) - 1.5;
-    // let y = Math.floor(index / 4.0) - 1.25;
-    // tile.render(x * 120.0, y * 220.0);
-    tile.render(-200.0, 0.0);
-  });
+  tiling.render(windowCenter.x - 200.0, windowCenter.y);
 } // Call this once to kick off the app
 
 
@@ -1864,7 +1880,7 @@ var latticePatches = {
       rotation: 0.0
     }]
   },
-  "3.3.3.3.6": {
+  "3.3.3.3.6a": {
     vertexFigure: [3, 3, 3, 3, 6],
     i1: [0.0, 0.0, 1.0 / 3.0],
     i2: [1.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0],
@@ -46131,7 +46147,8 @@ function () {
 
       this._vertexFigurePolygons.forEach(function (polygon) {
         return polygon.scale(scale);
-      }); // Compute lattice vectors
+      }); // Compute lattice vectors, which tell us how to translate copies of the 
+      // lattice patch across the plane in order to build a complete tiling
 
 
       this._latticeVector1 = new _vector.Vector(0.0, 0.0, 0.0);
@@ -46194,18 +46211,19 @@ function () {
     value: function render(x, y) {
       var _this2 = this;
 
-      var windowCenter = new _point.Point(window.app.renderer.view.width * 0.25, window.app.renderer.view.height * 0.25, 0.0);
       var background = 0xd1cac9;
       var orange = 0xfe8102;
       this._graphics = new PIXI.Graphics();
 
       this._graphics.lineStyle(0.25, 0xffffff);
 
-      if (true) {
+      var showVertexFigure = true;
+
+      if (showVertexFigure) {
         this._vertexFigurePolygons.forEach(function (polygon, index) {
           var flatPoints = polygon.points.map(function (point) {
             var yOffset = 120.0;
-            return [point.x - 0.0, point.y + yOffset];
+            return [point.x, point.y + yOffset];
           }).flat();
           var percent = 1.0 / (index + 1.0); //this._graphics.beginFill(utils.lerpColor(0x3e9ec7, 0x37ccbb, percent));
 
@@ -46215,7 +46233,8 @@ function () {
 
           _this2._graphics.endFill();
         });
-      }
+      } // Draw the tiling
+
 
       this._polygons.forEach(function (polygon, index) {
         var flatPoints = polygon.points.map(function (point) {
@@ -46231,8 +46250,8 @@ function () {
       }); // Position this graphics container
 
 
-      this._graphics.x = windowCenter.x + x;
-      this._graphics.y = windowCenter.y + y;
+      this._graphics.x = x;
+      this._graphics.y = y;
       window.app.stage.addChild(this._graphics);
     }
   }, {
@@ -46255,6 +46274,11 @@ function () {
     key: "polygons",
     get: function get() {
       return this._polygons;
+    }
+  }, {
+    key: "latticeVectors",
+    get: function get() {
+      return [this._latticeVector1, this._latticeVector2];
     }
   }]);
 

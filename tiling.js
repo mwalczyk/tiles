@@ -32,6 +32,7 @@ export class Tiling {
 
 	assemble() {
 		let sum = 0.0;
+
 		this._vertexFigurePolygons = this._vertexFigure.map((vertex, index) => {
 			let base = Polygon.withSideLength(1.0, vertex);
 			
@@ -48,7 +49,8 @@ export class Tiling {
 		});
 		this._vertexFigurePolygons.forEach(polygon => polygon.scale(scale));
 
-		// Compute lattice vectors
+		// Compute lattice vectors, which tell us how to translate copies of the 
+		// lattice patch across the plane in order to build a complete tiling
 		this._latticeVector1 = new Vector(0.0, 0.0, 0.0);
 		this._latticeVector2 = new Vector(0.0, 0.0, 0.0);
 
@@ -96,10 +98,7 @@ export class Tiling {
 					let tilePolygon = polygon.copy();
 					tilePolygon.move(new Vector(offset.x, offset.y - 6, 0.0));
 					this._polygons.push(tilePolygon);
-
 				});
-				
-
 			}
 		}
 	}
@@ -116,24 +115,25 @@ export class Tiling {
 		return this._polygons;
 	}
 
+	get latticeVectors() {
+		return [this._latticeVector1, this._latticeVector2];
+	}
+
 	render(x, y) {
-		let windowCenter = new Point(
-			window.app.renderer.view.width * 0.25,
-			window.app.renderer.view.height * 0.25,
-			0.0
-		);
 		const background = 0xd1cac9;
 		const orange = 0xfe8102;
 
 		this._graphics = new PIXI.Graphics();
 		this._graphics.lineStyle(0.25, 0xffffff);
 
-		if (true) {
+		const showVertexFigure = true;
+
+		if (showVertexFigure) {
 			this._vertexFigurePolygons.forEach((polygon, index) => {
 				const flatPoints = polygon.points
 					.map(point => {
 						const yOffset = 120.0;
-						return [point.x - 0.0, point.y + yOffset];
+						return [point.x, point.y + yOffset];
 					})
 					.flat();
 				const percent = 1.0 / (index + 1.0);
@@ -144,6 +144,7 @@ export class Tiling {
 			});
 		}
 
+		// Draw the tiling
 		this._polygons.forEach((polygon, index) => {
 			const flatPoints = polygon.points
 				.map(point => {
@@ -160,8 +161,8 @@ export class Tiling {
 		});
 
 		// Position this graphics container
-		this._graphics.x = windowCenter.x + x;
-		this._graphics.y = windowCenter.y + y;
+		this._graphics.x = x;
+		this._graphics.y = y;
 
 		window.app.stage.addChild(this._graphics);
 	}

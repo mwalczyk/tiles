@@ -45,50 +45,59 @@ window.app = app;
 
 const inputW = document.getElementById("input_w");
 const inputTau = document.getElementById("input_tau");
+const divDropdown = document.getElementById("div_dropdown");
 const pCurrentTwistAngle = document.getElementById("p_current_twist_angle");
 const pSafeTwistAngle = document.getElementById("p_safe_twist_angle");
 inputW.addEventListener("input", update);
 inputTau.addEventListener("input", update);
 
 let windowCenter = new Point(
-	window.app.renderer.view.width * 0.25,
-	window.app.renderer.view.height * 0.25,
+	app.renderer.view.width * 0.5 / app.renderer.resolution,
+	app.renderer.view.height * 0.5 / app.renderer.resolution,
 	0.0);
 
-// Create all lattice patches
-// let tilings = []
-// for (let patch in lattice.latticePatches) {
-// 	tilings.push(new Tiling(patch));
-// }
-let tilings = [new Tiling("4.6.12")];
+let currentTiling = "4.6.12";
+let tiling = new Tiling(currentTiling);
+let twistTiles = [];
+build();
 
-let twistTiles = tilings[0].polygons.map((polygon, index) => {
-	return new Tile(polygon, true);
-})
+function build() {
+	// Clear all graphics objects from the stage
+	app.stage.removeChildren();
 
-function update(e) {
+	// Build the tiling (lattice patch, etc.)
+	tiling = new Tiling(currentTiling);
+
+	// From the polygons of the tiling, build twist tiles
+	twistTiles = tiling.polygons.map((polygon, index) => {
+		return new Tile(polygon);
+	});
+}
+
+// Whenever one of the drop-down menu items is clicked, we need to rebuild
+// the tiling and draw it 
+[...document.getElementsByClassName("tiling")].forEach(tilingOption => {
+	tilingOption.addEventListener("click", event => {
+		currentTiling = event.target.innerHTML;
+		build();
+		update();
+	})
+});
+
+function update() {
 	twistTiles.forEach((tile, index) => {
 
-		if (true){
-			const percent = index / twistTiles.length;
-
-			// Set tile parameters
-			tile.w = parseFloat(inputW.value);
-			tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);
-			tile.buildVertices();
-			
-			pCurrentTwistAngle.innerHTML = `Current twist angle: ${(tile.alpha * (180.0 / Math.PI)).toFixed(2)} Degrees`;
-			pSafeTwistAngle.innerHTML = `Safe twist angle: ${(tile.alphaSafe * (180.0 / Math.PI)).toFixed(2)} Degrees`;
-		}
+		// Set tile parameters
+		tile.w = parseFloat(inputW.value);
+		tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);
+		tile.buildVertices();
+		
+		pCurrentTwistAngle.innerHTML = `Current twist angle: ${(tile.alpha * (180.0 / Math.PI)).toFixed(2)} Degrees`;
+		pSafeTwistAngle.innerHTML = `Safe twist angle: ${(tile.alphaSafe * (180.0 / Math.PI)).toFixed(2)} Degrees`;
 		tile.render();
 	});
 
-	tilings.forEach((tile, index) => {
-		// let x = (index % 4.0) - 1.5;
-		// let y = Math.floor(index / 4.0) - 1.25;
-		// tile.render(x * 120.0, y * 220.0);
-		tile.render(-200.0, 0.0);
-	});
+	tiling.render(windowCenter.x - 200.0, windowCenter.y);
 }
 
 // Call this once to kick off the app
