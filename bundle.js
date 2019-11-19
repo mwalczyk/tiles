@@ -1736,6 +1736,8 @@ module.exports = {
 
 var PIXI = _interopRequireWildcard(require("pixi.js"));
 
+var _ = _interopRequireWildcard(require("./src/dashed_line"));
+
 var lattice = _interopRequireWildcard(require("./src/lattice"));
 
 var _point = require("./src/math/point");
@@ -1757,27 +1759,6 @@ function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread n
 function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
 
 function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
-
-PIXI.Graphics.prototype.dashedLineTo = function (toX, toY) {
-  var dash = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 2;
-  var gap = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 2;
-  var lastPosition = this.currentPath.points;
-  var to = new _vector.Vector(toX, toY, 0.0);
-  var from = new _vector.Vector(lastPosition[lastPosition.length - 2], lastPosition[lastPosition.length - 1], 0.0);
-  var current = from;
-  var direction = to.subtract(from);
-  var pathLength = direction.length();
-  direction = direction.normalize();
-  var traversed = 0.0;
-
-  while (traversed < pathLength) {
-    current = current.add(direction.multiplyScalar(dash));
-    this.lineTo(current.x, current.y);
-    current = current.add(direction.multiplyScalar(gap));
-    this.moveTo(current.x, current.y);
-    traversed += dash + gap;
-  }
-};
 
 var app = new PIXI.Application({
   width: 512,
@@ -1811,7 +1792,7 @@ function build() {
     return new _twist_tile.TwistTile(polygon);
   });
 } // Whenever one of the drop-down menu items is clicked, we need to rebuild
-// the tiling and draw it 
+// the tiling and draw it
 
 
 _toConsumableArray(document.getElementsByClassName("tiling")).forEach(function (tilingOption) {
@@ -1838,7 +1819,7 @@ function update() {
 
 update();
 
-},{"./src/lattice":53,"./src/math/point":56,"./src/math/vector":59,"./src/tiling":60,"./src/twist_tile":61,"pixi.js":51}],10:[function(require,module,exports){
+},{"./src/dashed_line":53,"./src/lattice":54,"./src/math/point":57,"./src/math/vector":60,"./src/tiling":61,"./src/twist_tile":62,"pixi.js":51}],10:[function(require,module,exports){
 /*!
  * @pixi/accessibility - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -44636,6 +44617,38 @@ exports.middleware = index;
 },{"mini-signals":48,"parse-uri":50}],53:[function(require,module,exports){
 "use strict";
 
+var PIXI = _interopRequireWildcard(require("pixi.js"));
+
+var _vector = require("./math/vector");
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; if (obj != null) { var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+PIXI.Graphics.prototype.dashedLineTo = function (toX, toY) {
+  var dash = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 2;
+  var gap = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 2;
+  var lastPosition = this.currentPath.points;
+  var to = new _vector.Vector(toX, toY, 0.0);
+  var from = new _vector.Vector(lastPosition[lastPosition.length - 2], lastPosition[lastPosition.length - 1], 0.0);
+  var current = from;
+  var direction = to.subtract(from);
+  var pathLength = direction.length();
+  direction = direction.normalize();
+  var traversed = 0.0;
+
+  while (traversed < pathLength) {
+    current = current.add(direction.multiplyScalar(dash));
+    this.lineTo(current.x, current.y);
+    current = current.add(direction.multiplyScalar(gap));
+    this.moveTo(current.x, current.y);
+    traversed += dash + gap;
+  }
+};
+
+},{"./math/vector":60,"pixi.js":51}],54:[function(require,module,exports){
+"use strict";
+
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -44925,7 +44938,7 @@ var latticePatches = {
 };
 exports.latticePatches = latticePatches;
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45048,7 +45061,7 @@ function () {
 
 exports.Line = Line;
 
-},{"./point":56,"./vector":59}],55:[function(require,module,exports){
+},{"./point":57,"./vector":60}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45123,7 +45136,7 @@ function () {
 
 exports.Matrix = Matrix;
 
-},{"./vector":59}],56:[function(require,module,exports){
+},{"./vector":60}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45211,7 +45224,7 @@ function () {
 
 exports.Point = Point;
 
-},{"./vector":59}],57:[function(require,module,exports){
+},{"./vector":60}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45404,7 +45417,7 @@ function () {
 
 exports.Polygon = Polygon;
 
-},{"./matrix":55,"./point":56}],58:[function(require,module,exports){
+},{"./matrix":56,"./point":57}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45516,7 +45529,7 @@ function uniqueObjects(array, property) {
   return unique;
 }
 
-},{"./vector":59}],59:[function(require,module,exports){
+},{"./vector":60}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45662,7 +45675,7 @@ function () {
 
 exports.Vector = Vector;
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45882,7 +45895,7 @@ function () {
 
 exports.Tiling = Tiling;
 
-},{"./lattice":53,"./math/point":56,"./math/polygon":57,"./math/utils":58,"./math/vector":59,"pixi.js":51}],61:[function(require,module,exports){
+},{"./lattice":54,"./math/point":57,"./math/polygon":58,"./math/utils":59,"./math/vector":60,"pixi.js":51}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46288,4 +46301,4 @@ function () {
 
 exports.TwistTile = TwistTile;
 
-},{"./math/line":54,"./math/matrix":55,"./math/point":56,"./math/polygon":57,"./math/vector":59,"pixi.js":51}]},{},[9]);
+},{"./math/line":55,"./math/matrix":56,"./math/point":57,"./math/polygon":58,"./math/vector":60,"pixi.js":51}]},{},[9]);

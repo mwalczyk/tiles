@@ -1,37 +1,11 @@
 import * as PIXI from "pixi.js";
 
+import * as _ from "./src/dashed_line";
 import * as lattice from "./src/lattice";
 import { Point } from "./src/math/point";
 import { Tiling } from "./src/tiling";
 import { TwistTile } from "./src/twist_tile";
 import { Vector } from "./src/math/vector";
-
-PIXI.Graphics.prototype.dashedLineTo = function(toX, toY, dash=2, gap=2) {
-	const lastPosition = this.currentPath.points;
-
-	let to = new Vector(toX, toY, 0.0);
-	let from = new Vector(
-		lastPosition[lastPosition.length - 2],
-		lastPosition[lastPosition.length - 1],
-		0.0
-	);
-
-	let current = from;
-
-	let direction = to.subtract(from);
-	let pathLength = direction.length();
-	direction = direction.normalize();
-
-	let traversed = 0.0;
-
-	while (traversed < pathLength) {
-		current = current.add(direction.multiplyScalar(dash));
-		this.lineTo(current.x, current.y);
-		current = current.add(direction.multiplyScalar(gap));
-		this.moveTo(current.x, current.y);
-		traversed += dash + gap;
-	}
-};
 
 let app = new PIXI.Application({
 	width: 512,
@@ -52,9 +26,10 @@ inputW.addEventListener("input", update);
 inputTau.addEventListener("input", update);
 
 let windowCenter = new Point(
-	app.renderer.view.width * 0.5 / app.renderer.resolution,
-	app.renderer.view.height * 0.5 / app.renderer.resolution,
-	0.0);
+	(app.renderer.view.width * 0.5) / app.renderer.resolution,
+	(app.renderer.view.height * 0.5) / app.renderer.resolution,
+	0.0
+);
 
 let currentTiling = "4.6.12";
 let tiling = new Tiling(currentTiling);
@@ -75,25 +50,31 @@ function build() {
 }
 
 // Whenever one of the drop-down menu items is clicked, we need to rebuild
-// the tiling and draw it 
+// the tiling and draw it
 [...document.getElementsByClassName("tiling")].forEach(tilingOption => {
 	tilingOption.addEventListener("click", event => {
 		currentTiling = event.target.innerHTML;
 		build();
 		update();
-	})
+	});
 });
 
 function update() {
 	twistTiles.forEach((tile, index) => {
-
 		// Set tile parameters
 		tile.w = parseFloat(inputW.value);
 		tile.tau = parseFloat(inputTau.value) * (Math.PI / 180.0);
 		tile.buildVertices();
+
+		pCurrentTwistAngle.innerHTML = `Current twist angle: ${(
+			tile.alpha *
+			(180.0 / Math.PI)
+		).toFixed(2)} Degrees`;
+		pSafeTwistAngle.innerHTML = `Safe twist angle: ${(
+			tile.alphaSafe *
+			(180.0 / Math.PI)
+		).toFixed(2)} Degrees`;
 		
-		pCurrentTwistAngle.innerHTML = `Current twist angle: ${(tile.alpha * (180.0 / Math.PI)).toFixed(2)} Degrees`;
-		pSafeTwistAngle.innerHTML = `Safe twist angle: ${(tile.alphaSafe * (180.0 / Math.PI)).toFixed(2)} Degrees`;
 		tile.render();
 	});
 
