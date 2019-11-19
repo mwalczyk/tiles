@@ -1,9 +1,9 @@
 import * as PIXI from "pixi.js";
 
-import { Point } from "./src/point";
-import { Polygon } from "./src/polygon";
-import { Vector } from "./src/vector";
-import * as utils from "./src/utils";
+import { Point } from "./math/point";
+import { Polygon } from "./math/polygon";
+import { Vector } from "./math/vector";
+import * as utils from "./math/utils";
 import * as lattice from "./lattice";
 
 const scale = 10.0;
@@ -17,11 +17,14 @@ export class Tiling {
 	 * the 11 known Archimedean tilings above
 	 *
 	 */
-	constructor(patch, rows=2, columns=3) {
+	constructor(patch, rows = 2, columns = 3) {
+		// The number of times the lattice patch is repeated, vertically
 		this._rows = rows;
+
+		// The number of times the lattice patch is repeated, horizontally
 		this._columns = columns;
 
-		// One tile-able patch of the tiling
+		// One repeatable patch of the tiling
 		this._latticePatch = lattice.latticePatches[patch];
 
 		// Get the vertex figure that corresponds to this tiling
@@ -35,8 +38,8 @@ export class Tiling {
 
 		this._vertexFigurePolygons = this._vertexFigure.map((vertex, index) => {
 			let base = Polygon.withSideLength(1.0, vertex);
-			
-			// First translate so that one of the corners of this polygon is coincident 
+
+			// First translate so that one of the corners of this polygon is coincident
 			// with the origin then rotate around the origin
 			let circumradius = 0.5 / Math.sin(Math.PI / vertex);
 			let interiorAngle = ((vertex - 2) * Math.PI) / vertex;
@@ -49,7 +52,7 @@ export class Tiling {
 		});
 		this._vertexFigurePolygons.forEach(polygon => polygon.scale(scale));
 
-		// Compute lattice vectors, which tell us how to translate copies of the 
+		// Compute lattice vectors, which tell us how to translate copies of the
 		// lattice patch across the plane in order to build a complete tiling
 		this._latticeVector1 = new Vector(0.0, 0.0, 0.0);
 		this._latticeVector2 = new Vector(0.0, 0.0, 0.0);
@@ -61,37 +64,46 @@ export class Tiling {
 		this._latticePatch.i2.forEach(entry => {
 			this._latticeVector2.x += Math.cos(entry * Math.PI);
 			this._latticeVector2.y += Math.sin(entry * Math.PI);
-		});	
+		});
 
 		// Compute polygons that form a single lattice patch
-		this._latticePolygons = this._latticePatch.polygons.map((polygon, index) => {
-			let base = Polygon.withSideLength(1.0, polygon.n);
+		this._latticePolygons = this._latticePatch.polygons.map(
+			(polygon, index) => {
+				let base = Polygon.withSideLength(1.0, polygon.n);
 
-			// Calculate the circumradius and interior angle of this polygon
-			let circumradius = 0.5 / Math.sin(Math.PI / polygon.n);
-			let interiorAngle = ((polygon.n - 2) * Math.PI) / polygon.n;
+				// Calculate the circumradius and interior angle of this polygon
+				let circumradius = 0.5 / Math.sin(Math.PI / polygon.n);
+				let interiorAngle = ((polygon.n - 2) * Math.PI) / polygon.n;
 
-			// Translate the polygon so that its first vertex coincides with the origin
-			base.move(new Vector(-circumradius, 0.0, 0.0));
-			base.rotate(interiorAngle * 0.5); 
-			base.rotate(polygon.rotation * Math.PI);
+				// Translate the polygon so that its first vertex coincides with the origin
+				base.move(new Vector(-circumradius, 0.0, 0.0));
+				base.rotate(interiorAngle * 0.5);
+				base.rotate(polygon.rotation * Math.PI);
 
-			polygon.offset.forEach(entry => {
-				base.move(new Vector(-Math.cos(entry * Math.PI), -Math.sin(entry * Math.PI), 0.0));
-			});
-			base.scale(scale);
+				polygon.offset.forEach(entry => {
+					base.move(
+						new Vector(
+							-Math.cos(entry * Math.PI),
+							-Math.sin(entry * Math.PI),
+							0.0
+						)
+					);
+				});
+				base.scale(scale);
 
-			return base;
-		});
+				return base;
+			}
+		);
 
 		// Generate the full tiling (or at least, a couple rows and columns)
 		this._polygons = [];
 		for (let i = 0; i < this._rows; i++) {
 			for (let j = 0; j < this._columns; j++) {
-			
 				let iCentered = i - this._rows / 2;
 				let jCentered = j - this._columns / 2;
-				let offset = this._latticeVector1.multiplyScalar(iCentered).add(this._latticeVector2.multiplyScalar(jCentered));
+				let offset = this._latticeVector1
+					.multiplyScalar(iCentered)
+					.add(this._latticeVector2.multiplyScalar(jCentered));
 				offset = offset.multiplyScalar(-scale);
 
 				this._latticePolygons.forEach((polygon, index) => {
@@ -132,11 +144,12 @@ export class Tiling {
 			this._vertexFigurePolygons.forEach((polygon, index) => {
 				const flatPoints = polygon.points
 					.map(point => {
+						// Move the vertex figure below the tiling - pretty arbitrary
 						const yOffset = 120.0;
 						return [point.x, point.y + yOffset];
 					})
 					.flat();
-					
+
 				this._graphics.beginFill(background);
 				this._graphics.drawPolygon(flatPoints);
 				this._graphics.endFill();
@@ -154,7 +167,6 @@ export class Tiling {
 			this._graphics.beginFill(background);
 			this._graphics.drawPolygon(flatPoints);
 			this._graphics.endFill();
-
 		});
 
 		// Position this graphics container
@@ -164,11 +176,7 @@ export class Tiling {
 		window.app.stage.addChild(this._graphics);
 	}
 
-	createPrimalGraph() {
+	createPrimalGraph() {}
 
-	}
-
-	createDualGraph() {
-
-	}
+	createDualGraph() {}
 }

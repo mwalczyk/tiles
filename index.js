@@ -1,10 +1,10 @@
 import * as PIXI from "pixi.js";
 
-import * as lattice from "./lattice";
-import { Point } from "./src/point";
-import { Tile } from "./tile";
-import { Tiling, vertexFigures } from "./tiling";
-import { Vector } from "./src/vector";
+import * as lattice from "./src/lattice";
+import { Point } from "./src/math/point";
+import { Tiling } from "./src/tiling";
+import { TwistTile } from "./src/twist_tile";
+import { Vector } from "./src/math/vector";
 
 PIXI.Graphics.prototype.dashedLineTo = function(toX, toY, dash=2, gap=2) {
 	const lastPosition = this.currentPath.points;
@@ -70,7 +70,7 @@ function build() {
 
 	// From the polygons of the tiling, build twist tiles
 	twistTiles = tiling.polygons.map((polygon, index) => {
-		return new Tile(polygon);
+		return new TwistTile(polygon);
 	});
 }
 

@@ -1,17 +1,17 @@
 import * as PIXI from "pixi.js";
 
-import { Line } from "./src/line";
-import { Matrix } from "./src/matrix";
-import { Point } from "./src/point";
-import { Polygon } from "./src/polygon";
-import { Vector } from "./src/vector";
+import { Line } from "./math/line";
+import { Matrix } from "./math/matrix";
+import { Point } from "./math/point";
+import { Polygon } from "./math/polygon";
+import { Vector } from "./math/vector";
 
 /*
  *
  * A class representing a single, centered twist tile.
  *
  */
-export class Tile {
+export class TwistTile {
 	constructor(polygon, reversed=false) {
 		// The segment width ratio along each of the tile polygon's edges
 		this._w = 0.25;

@@ -1736,15 +1736,15 @@ module.exports = {
 
 var PIXI = _interopRequireWildcard(require("pixi.js"));
 
-var lattice = _interopRequireWildcard(require("./lattice"));
+var lattice = _interopRequireWildcard(require("./src/lattice"));
 
-var _point = require("./src/point");
+var _point = require("./src/math/point");
 
-var _tile = require("./tile");
+var _tiling = require("./src/tiling");
 
-var _tiling = require("./tiling");
+var _twist_tile = require("./src/twist_tile");
 
-var _vector = require("./src/vector");
+var _vector = require("./src/math/vector");
 
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
 
@@ -1808,7 +1808,7 @@ function build() {
   tiling = new _tiling.Tiling(currentTiling); // From the polygons of the tiling, build twist tiles
 
   twistTiles = tiling.polygons.map(function (polygon, index) {
-    return new _tile.Tile(polygon);
+    return new _twist_tile.TwistTile(polygon);
   });
 } // Whenever one of the drop-down menu items is clicked, we need to rebuild
 // the tiling and draw it 
@@ -1838,299 +1838,7 @@ function update() {
 
 update();
 
-},{"./lattice":10,"./src/point":56,"./src/vector":59,"./tile":60,"./tiling":61,"pixi.js":52}],10:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.latticePatches = void 0;
-var latticePatches = {
-  "3.3.3.3.3.3": {
-    vertexFigure: [3, 3, 3, 3, 3, 3],
-    i1: [0.0],
-    i2: [1.0 / 3.0],
-    polygons: [{
-      n: 3,
-      offset: [],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [0.0],
-      rotation: 1.0 / 3.0
-    }]
-  },
-  "4.4.4.4": {
-    vertexFigure: [4, 4, 4, 4],
-    i1: [0.0],
-    i2: [1.0 / 2.0],
-    polygons: [{
-      n: 4,
-      offset: [],
-      rotation: 0.0
-    }]
-  },
-  "6.6.6": {
-    vertexFigure: [6, 6, 6],
-    i1: [0.0, 1.0 / 3.0],
-    i2: [2.0 / 3.0, 1.0 / 3.0],
-    polygons: [{
-      n: 6,
-      offset: [],
-      rotation: 0.0
-    }]
-  },
-  "3.3.3.3.6a": {
-    vertexFigure: [3, 3, 3, 3, 6],
-    i1: [0.0, 0.0, 1.0 / 3.0],
-    i2: [1.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0],
-    polygons: [{
-      n: 3,
-      offset: [],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [0.0],
-      rotation: 1.0 / 3.0
-    }, {
-      n: 3,
-      offset: [0.0],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [0.0, 0.0],
-      rotation: 1.0 / 3.0
-    }, {
-      n: 3,
-      offset: [0.0, 1.0 / 3.0],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [0.0, 1.0 / 3.0, 0.0],
-      rotation: 1.0 / 3.0
-    }, {
-      n: 3,
-      offset: [0.0, 1.0 / 3.0, 1.0 / 3.0],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [0.0, 1.0 / 3.0, 1.0 / 3.0],
-      rotation: 1.0 / 3.0
-    }, {
-      n: 6,
-      offset: [1.0 / 3.0],
-      rotation: 0.0
-    }]
-  },
-  "3.3.3.3.6b": {
-    vertexFigure: [3, 3, 3, 3, 6],
-    i1: [0.0, -1.0 / 3.0, 0.0],
-    i2: [2.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0],
-    polygons: [{
-      n: 3,
-      offset: [],
-      rotation: 2.0 / 3.0
-    }, {
-      n: 3,
-      offset: [],
-      rotation: 1.0 / 3.0
-    }, {
-      n: 3,
-      offset: [],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [0.0],
-      rotation: 1.0 / 3.0
-    }, {
-      n: 3,
-      offset: [1.0 / 3.0],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [0.0, 1.0 / 3.0],
-      rotation: 1.0 / 3.0
-    }, {
-      n: 3,
-      offset: [1.0 / 3.0, 1.0 / 3.0],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [1.0 / 3.0, 1.0 / 3.0],
-      rotation: 1.0 / 3.0
-    }, {
-      n: 6,
-      offset: [2.0 / 3.0],
-      rotation: 0.0
-    }]
-  },
-  "3.3.3.4.4": {
-    vertexFigure: [3, 3, 3, 4, 4],
-    i1: [0.0],
-    i2: [1.0 / 3.0, 1.0 / 2.0],
-    polygons: [{
-      n: 3,
-      offset: [],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [0.0],
-      rotation: 1.0 / 3.0
-    }, {
-      n: 4,
-      offset: [1.0 / 3.0],
-      rotation: 0.0
-    }]
-  },
-  "3.3.4.3.4": {
-    vertexFigure: [3, 3, 4, 3, 4],
-    i1: [0.0, 1.0 / 6.0],
-    i2: [2.0 / 3.0, 1.0 / 2.0],
-    polygons: [{
-      n: 3,
-      offset: [],
-      rotation: 0.0
-    }, {
-      n: 4,
-      offset: [0.0],
-      rotation: 1.0 / 6.0
-    }, {
-      n: 3,
-      offset: [1.0 / 3.0],
-      rotation: 1.0 / 6.0
-    }, {
-      n: 3,
-      offset: [1.0 / 3.0, 1.0 / 6.0],
-      rotation: 2.0 / 4.0 // This was 1.0 / 4.0
-
-    }, {
-      n: 4,
-      offset: [2.0 / 3.0],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [],
-      rotation: 1.0 / 3.0
-    }]
-  },
-  "3.4.6.4": {
-    vertexFigure: [3, 4, 6, 4],
-    i1: [0.0, 1.0 / 6.0, -1.0 / 6.0],
-    i2: [1.0 / 3.0, 1.0 / 6.0, 1.0 / 2.0],
-    polygons: [{
-      n: 4,
-      offset: [],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [-1.0 / 3.0],
-      rotation: 1.0 / 3.0
-    }, {
-      n: 4,
-      offset: [-1.0 / 3.0],
-      rotation: -1.0 / 6.0
-    }, {
-      n: 3,
-      offset: [-1.0 / 3.0, -1.0 / 6.0],
-      rotation: 0.0
-    }, {
-      n: 4,
-      offset: [-1.0 / 3.0, -1.0 / 6.0, 0.0],
-      rotation: 1.0 / 6.0
-    }, {
-      n: 6,
-      offset: [0.0],
-      rotation: -1.0 / 6.0
-    }]
-  },
-  "3.6.3.6": {
-    vertexFigure: [3, 6, 3, 6],
-    i1: [0.0, 0.0],
-    i2: [1.0 / 3.0, 1.0 / 3.0],
-    polygons: [{
-      n: 3,
-      offset: [],
-      rotation: 0.0
-    }, {
-      n: 6,
-      offset: [0.0],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [0.0, 0.0, 1.0 / 3.0],
-      rotation: 1.0 / 3.0
-    }]
-  },
-  "3.12.12": {
-    vertexFigure: [3, 12, 12],
-    i1: [0.0, -1.0 / 6.0, 0.0, 1.0 / 6.0],
-    i2: [1.0 / 3.0, 1.0 / 2.0, 1.0 / 3.0, 1.0 / 6.0],
-    polygons: [{
-      n: 3,
-      offset: [],
-      rotation: 0.0
-    }, {
-      n: 12,
-      offset: [0.0, -1.0 / 6.0],
-      rotation: 0.0
-    }, {
-      n: 3,
-      offset: [0.0, -1.0 / 6.0, 0.0, 1.0 / 6.0, 1.0 / 3.0, 1.0 / 2.0],
-      rotation: 1.0 / 3.0
-    }]
-  },
-  "4.6.12": {
-    vertexFigure: [4, 6, 12],
-    i1: [0.0, -1.0 / 6.0, 1.0 / 6.0, 1.0 / 2.0, 1.0 / 3.0, 1.0 / 6.0],
-    i2: [1.0 / 6.0, 1.0 / 3.0, 1.0 / 2.0, 2.0 / 3.0, 5.0 / 6.0, 1.0 / 2.0],
-    polygons: [{
-      n: 4,
-      offset: [],
-      rotation: 0.0
-    }, {
-      n: 6,
-      offset: [0.0, -1.0 / 6.0],
-      rotation: 1.0 / 6.0
-    }, {
-      n: 4,
-      offset: [0.0, -1.0 / 6.0, 1.0 / 6.0, 1.0 / 2.0],
-      rotation: 1.0 / 3.0
-    }, {
-      n: 6,
-      offset: [0.0, -1.0 / 6.0, 1.0 / 6.0, 1.0 / 2.0, 1.0 / 3.0],
-      rotation: 1.0 / 6.0
-    }, {
-      n: 4,
-      offset: [1.0 / 2.0, 0.0, 1.0 / 6.0, 1.0 / 3.0, 1.0 / 2.0],
-      rotation: 1.0 / 6.0
-    }, {
-      n: 6,
-      offset: [1.0 / 2.0, 0.0, 1.0 / 6.0, 1.0 / 3.0, 1.0 / 2.0, 2.0 / 3.0],
-      rotation: 1.0 / 6.0
-    }, {
-      n: 12,
-      offset: [1.0 / 2.0],
-      rotation: 0.0
-    }]
-  },
-  "4.8.8": {
-    vertexFigure: [4, 8, 8],
-    i1: [0.0, -1.0 / 4.0, 0.0, 1.0 / 4.0],
-    i2: [0.0, 1.0 / 2.0, 1.0 / 4.0],
-    polygons: [{
-      n: 4,
-      offset: [],
-      rotation: 0.0
-    }, {
-      n: 8,
-      offset: [0.0, -1.0 / 4.0],
-      rotation: 0.0
-    }]
-  }
-};
-exports.latticePatches = latticePatches;
-
-},{}],11:[function(require,module,exports){
+},{"./src/lattice":53,"./src/math/point":56,"./src/math/vector":59,"./src/tiling":60,"./src/twist_tile":61,"pixi.js":51}],10:[function(require,module,exports){
 /*!
  * @pixi/accessibility - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -2781,7 +2489,7 @@ exports.AccessibilityManager = AccessibilityManager;
 exports.accessibleTarget = accessibleTarget;
 
 
-},{"@pixi/display":15,"@pixi/utils":44}],12:[function(require,module,exports){
+},{"@pixi/display":14,"@pixi/utils":43}],11:[function(require,module,exports){
 /*!
  * @pixi/app - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -3016,7 +2724,7 @@ Application.registerPlugin(ResizePlugin);
 exports.Application = Application;
 
 
-},{"@pixi/core":14,"@pixi/display":15}],13:[function(require,module,exports){
+},{"@pixi/core":13,"@pixi/display":14}],12:[function(require,module,exports){
 /*!
  * @pixi/constants - v5.1.0
  * Compiled Fri, 19 Jul 2019 21:54:36 UTC
@@ -3366,7 +3074,7 @@ exports.TYPES = TYPES;
 exports.WRAP_MODES = WRAP_MODES;
 
 
-},{}],14:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 /*!
  * @pixi/core - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -15846,7 +15554,7 @@ exports.resources = index;
 exports.systems = systems;
 
 
-},{"@pixi/constants":13,"@pixi/display":15,"@pixi/math":26,"@pixi/runner":35,"@pixi/settings":36,"@pixi/ticker":43,"@pixi/utils":44}],15:[function(require,module,exports){
+},{"@pixi/constants":12,"@pixi/display":14,"@pixi/math":25,"@pixi/runner":34,"@pixi/settings":35,"@pixi/ticker":42,"@pixi/utils":43}],14:[function(require,module,exports){
 /*!
  * @pixi/display - v5.1.3
  * Compiled Mon, 09 Sep 2019 04:51:53 UTC
@@ -17654,7 +17362,7 @@ exports.Container = Container;
 exports.DisplayObject = DisplayObject;
 
 
-},{"@pixi/math":26,"@pixi/settings":36,"@pixi/utils":44}],16:[function(require,module,exports){
+},{"@pixi/math":25,"@pixi/settings":35,"@pixi/utils":43}],15:[function(require,module,exports){
 /*!
  * @pixi/extract - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -17957,7 +17665,7 @@ Extract.arrayPostDivide = function arrayPostDivide (pixels, out)
 exports.Extract = Extract;
 
 
-},{"@pixi/core":14,"@pixi/math":26,"@pixi/utils":44}],17:[function(require,module,exports){
+},{"@pixi/core":13,"@pixi/math":25,"@pixi/utils":43}],16:[function(require,module,exports){
 /*!
  * @pixi/filter-alpha - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -18030,7 +17738,7 @@ var AlphaFilter = /*@__PURE__*/(function (Filter) {
 exports.AlphaFilter = AlphaFilter;
 
 
-},{"@pixi/core":14}],18:[function(require,module,exports){
+},{"@pixi/core":13}],17:[function(require,module,exports){
 /*!
  * @pixi/filter-blur - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -18466,7 +18174,7 @@ exports.BlurFilter = BlurFilter;
 exports.BlurFilterPass = BlurFilterPass;
 
 
-},{"@pixi/core":14,"@pixi/settings":36}],19:[function(require,module,exports){
+},{"@pixi/core":13,"@pixi/settings":35}],18:[function(require,module,exports){
 /*!
  * @pixi/filter-color-matrix - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -19073,7 +18781,7 @@ ColorMatrixFilter.prototype.grayscale = ColorMatrixFilter.prototype.greyscale;
 exports.ColorMatrixFilter = ColorMatrixFilter;
 
 
-},{"@pixi/core":14}],20:[function(require,module,exports){
+},{"@pixi/core":13}],19:[function(require,module,exports){
 /*!
  * @pixi/filter-displacement - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -19200,7 +18908,7 @@ var DisplacementFilter = /*@__PURE__*/(function (Filter) {
 exports.DisplacementFilter = DisplacementFilter;
 
 
-},{"@pixi/core":14,"@pixi/math":26}],21:[function(require,module,exports){
+},{"@pixi/core":13,"@pixi/math":25}],20:[function(require,module,exports){
 /*!
  * @pixi/filter-fxaa - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -19246,7 +18954,7 @@ var FXAAFilter = /*@__PURE__*/(function (Filter) {
 exports.FXAAFilter = FXAAFilter;
 
 
-},{"@pixi/core":14}],22:[function(require,module,exports){
+},{"@pixi/core":13}],21:[function(require,module,exports){
 /*!
  * @pixi/filter-noise - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -19334,7 +19042,7 @@ var NoiseFilter = /*@__PURE__*/(function (Filter) {
 exports.NoiseFilter = NoiseFilter;
 
 
-},{"@pixi/core":14}],23:[function(require,module,exports){
+},{"@pixi/core":13}],22:[function(require,module,exports){
 /*!
  * @pixi/graphics - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -22862,7 +22570,7 @@ exports.GraphicsGeometry = GraphicsGeometry;
 exports.LineStyle = LineStyle;
 
 
-},{"@pixi/constants":13,"@pixi/core":14,"@pixi/display":15,"@pixi/math":26,"@pixi/utils":44}],24:[function(require,module,exports){
+},{"@pixi/constants":12,"@pixi/core":13,"@pixi/display":14,"@pixi/math":25,"@pixi/utils":43}],23:[function(require,module,exports){
 /*!
  * @pixi/interaction - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -25340,7 +25048,7 @@ exports.InteractionTrackingData = InteractionTrackingData;
 exports.interactiveTarget = interactiveTarget;
 
 
-},{"@pixi/display":15,"@pixi/math":26,"@pixi/ticker":43,"@pixi/utils":44}],25:[function(require,module,exports){
+},{"@pixi/display":14,"@pixi/math":25,"@pixi/ticker":42,"@pixi/utils":43}],24:[function(require,module,exports){
 /*!
  * @pixi/loaders - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -25655,7 +25363,7 @@ exports.LoaderResource = LoaderResource;
 exports.TextureLoader = TextureLoader;
 
 
-},{"@pixi/core":14,"@pixi/utils":44,"resource-loader":53}],26:[function(require,module,exports){
+},{"@pixi/core":13,"@pixi/utils":43,"resource-loader":52}],25:[function(require,module,exports){
 /*!
  * @pixi/math - v5.1.0
  * Compiled Fri, 19 Jul 2019 21:54:36 UTC
@@ -27777,7 +27485,7 @@ exports.SHAPES = SHAPES;
 exports.Transform = Transform;
 
 
-},{}],27:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /*!
  * @pixi/mesh-extras - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -28547,7 +28255,7 @@ exports.SimplePlane = SimplePlane;
 exports.SimpleRope = SimpleRope;
 
 
-},{"@pixi/core":14,"@pixi/mesh":28}],28:[function(require,module,exports){
+},{"@pixi/core":13,"@pixi/mesh":27}],27:[function(require,module,exports){
 /*!
  * @pixi/mesh - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -29342,7 +29050,7 @@ exports.MeshGeometry = MeshGeometry;
 exports.MeshMaterial = MeshMaterial;
 
 
-},{"@pixi/constants":13,"@pixi/core":14,"@pixi/display":15,"@pixi/math":26,"@pixi/settings":36,"@pixi/utils":44}],29:[function(require,module,exports){
+},{"@pixi/constants":12,"@pixi/core":13,"@pixi/display":14,"@pixi/math":25,"@pixi/settings":35,"@pixi/utils":43}],28:[function(require,module,exports){
 /*!
  * @pixi/mixin-cache-as-bitmap - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -29777,7 +29485,7 @@ display.DisplayObject.prototype._cacheAsBitmapDestroy = function _cacheAsBitmapD
 };
 
 
-},{"@pixi/core":14,"@pixi/display":15,"@pixi/math":26,"@pixi/settings":36,"@pixi/sprite":39,"@pixi/utils":44}],30:[function(require,module,exports){
+},{"@pixi/core":13,"@pixi/display":14,"@pixi/math":25,"@pixi/settings":35,"@pixi/sprite":38,"@pixi/utils":43}],29:[function(require,module,exports){
 /*!
  * @pixi/mixin-get-child-by-name - v5.1.3
  * Compiled Mon, 09 Sep 2019 04:51:53 UTC
@@ -29819,7 +29527,7 @@ display.Container.prototype.getChildByName = function getChildByName(name)
 };
 
 
-},{"@pixi/display":15}],31:[function(require,module,exports){
+},{"@pixi/display":14}],30:[function(require,module,exports){
 /*!
  * @pixi/mixin-get-global-position - v5.1.3
  * Compiled Mon, 09 Sep 2019 04:51:53 UTC
@@ -29862,7 +29570,7 @@ display.DisplayObject.prototype.getGlobalPosition = function getGlobalPosition(p
 };
 
 
-},{"@pixi/display":15,"@pixi/math":26}],32:[function(require,module,exports){
+},{"@pixi/display":14,"@pixi/math":25}],31:[function(require,module,exports){
 /*!
  * @pixi/particles - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -30844,7 +30552,7 @@ exports.ParticleContainer = ParticleContainer;
 exports.ParticleRenderer = ParticleRenderer;
 
 
-},{"@pixi/constants":13,"@pixi/core":14,"@pixi/display":15,"@pixi/math":26,"@pixi/utils":44}],33:[function(require,module,exports){
+},{"@pixi/constants":12,"@pixi/core":13,"@pixi/display":14,"@pixi/math":25,"@pixi/utils":43}],32:[function(require,module,exports){
 (function (global){
 /*!
  * @pixi/polyfill - v5.1.0
@@ -31013,7 +30721,7 @@ if (!window.Int32Array)
 
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"es6-promise-polyfill":46,"object-assign":50}],34:[function(require,module,exports){
+},{"es6-promise-polyfill":45,"object-assign":49}],33:[function(require,module,exports){
 /*!
  * @pixi/prepare - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -31743,7 +31451,7 @@ exports.Prepare = Prepare;
 exports.TimeLimiter = TimeLimiter;
 
 
-},{"@pixi/core":14,"@pixi/display":15,"@pixi/graphics":23,"@pixi/settings":36,"@pixi/text":42,"@pixi/ticker":43}],35:[function(require,module,exports){
+},{"@pixi/core":13,"@pixi/display":14,"@pixi/graphics":22,"@pixi/settings":35,"@pixi/text":41,"@pixi/ticker":42}],34:[function(require,module,exports){
 /*!
  * @pixi/runner - v5.1.1
  * Compiled Fri, 02 Aug 2019 23:20:23 UTC
@@ -31963,7 +31671,7 @@ Runner.prototype.run = Runner.prototype.emit;
 exports.Runner = Runner;
 
 
-},{}],36:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 /*!
  * @pixi/settings - v5.1.3
  * Compiled Mon, 09 Sep 2019 04:51:53 UTC
@@ -32287,7 +31995,7 @@ exports.isMobile = isMobile;
 exports.settings = settings;
 
 
-},{"ismobilejs":48}],37:[function(require,module,exports){
+},{"ismobilejs":47}],36:[function(require,module,exports){
 /*!
  * @pixi/sprite-animated - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -32748,7 +32456,7 @@ var AnimatedSprite = /*@__PURE__*/(function (Sprite) {
 exports.AnimatedSprite = AnimatedSprite;
 
 
-},{"@pixi/core":14,"@pixi/sprite":39,"@pixi/ticker":43}],38:[function(require,module,exports){
+},{"@pixi/core":13,"@pixi/sprite":38,"@pixi/ticker":42}],37:[function(require,module,exports){
 /*!
  * @pixi/sprite-tiling - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -33258,7 +32966,7 @@ exports.TilingSprite = TilingSprite;
 exports.TilingSpriteRenderer = TilingSpriteRenderer;
 
 
-},{"@pixi/constants":13,"@pixi/core":14,"@pixi/math":26,"@pixi/sprite":39,"@pixi/utils":44}],39:[function(require,module,exports){
+},{"@pixi/constants":12,"@pixi/core":13,"@pixi/math":25,"@pixi/sprite":38,"@pixi/utils":43}],38:[function(require,module,exports){
 /*!
  * @pixi/sprite - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -33942,7 +33650,7 @@ var Sprite = /*@__PURE__*/(function (Container) {
 exports.Sprite = Sprite;
 
 
-},{"@pixi/constants":13,"@pixi/core":14,"@pixi/display":15,"@pixi/math":26,"@pixi/settings":36,"@pixi/utils":44}],40:[function(require,module,exports){
+},{"@pixi/constants":12,"@pixi/core":13,"@pixi/display":14,"@pixi/math":25,"@pixi/settings":35,"@pixi/utils":43}],39:[function(require,module,exports){
 /*!
  * @pixi/spritesheet - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -34363,7 +34071,7 @@ exports.Spritesheet = Spritesheet;
 exports.SpritesheetLoader = SpritesheetLoader;
 
 
-},{"@pixi/core":14,"@pixi/loaders":25,"@pixi/math":26,"@pixi/utils":44}],41:[function(require,module,exports){
+},{"@pixi/core":13,"@pixi/loaders":24,"@pixi/math":25,"@pixi/utils":43}],40:[function(require,module,exports){
 /*!
  * @pixi/text-bitmap - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -35204,7 +34912,7 @@ exports.BitmapFontLoader = BitmapFontLoader;
 exports.BitmapText = BitmapText;
 
 
-},{"@pixi/core":14,"@pixi/display":15,"@pixi/loaders":25,"@pixi/math":26,"@pixi/settings":36,"@pixi/sprite":39,"@pixi/utils":44}],42:[function(require,module,exports){
+},{"@pixi/core":13,"@pixi/display":14,"@pixi/loaders":24,"@pixi/math":25,"@pixi/settings":35,"@pixi/sprite":38,"@pixi/utils":43}],41:[function(require,module,exports){
 /*!
  * @pixi/text - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -37491,7 +37199,7 @@ exports.TextMetrics = TextMetrics;
 exports.TextStyle = TextStyle;
 
 
-},{"@pixi/core":14,"@pixi/math":26,"@pixi/settings":36,"@pixi/sprite":39,"@pixi/utils":44}],43:[function(require,module,exports){
+},{"@pixi/core":13,"@pixi/math":25,"@pixi/settings":35,"@pixi/sprite":38,"@pixi/utils":43}],42:[function(require,module,exports){
 /*!
  * @pixi/ticker - v5.1.3
  * Compiled Mon, 09 Sep 2019 04:51:53 UTC
@@ -38454,7 +38162,7 @@ exports.TickerPlugin = TickerPlugin;
 exports.UPDATE_PRIORITY = UPDATE_PRIORITY;
 
 
-},{"@pixi/settings":36}],44:[function(require,module,exports){
+},{"@pixi/settings":35}],43:[function(require,module,exports){
 /*!
  * @pixi/utils - v5.1.3
  * Compiled Mon, 09 Sep 2019 04:51:53 UTC
@@ -39481,7 +39189,7 @@ exports.trimCanvas = trimCanvas;
 exports.uid = uid;
 
 
-},{"@pixi/constants":13,"@pixi/settings":36,"earcut":45,"eventemitter3":47,"url":7}],45:[function(require,module,exports){
+},{"@pixi/constants":12,"@pixi/settings":35,"earcut":44,"eventemitter3":46,"url":7}],44:[function(require,module,exports){
 'use strict';
 
 module.exports = earcut;
@@ -40159,7 +39867,7 @@ earcut.flatten = function (data) {
     return result;
 };
 
-},{}],46:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 (function (global,setImmediate){
 (function(global){
 
@@ -40509,7 +40217,7 @@ Promise.reject = function(reason){
 })(typeof window != 'undefined' ? window : typeof global != 'undefined' ? global : typeof self != 'undefined' ? self : this);
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"timers":6}],47:[function(require,module,exports){
+},{"timers":6}],46:[function(require,module,exports){
 'use strict';
 
 var has = Object.prototype.hasOwnProperty
@@ -40847,9 +40555,9 @@ if ('undefined' !== typeof module) {
   module.exports = EventEmitter;
 }
 
-},{}],48:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 !function(e){var n=/iPhone/i,t=/iPod/i,r=/iPad/i,a=/\bAndroid(?:.+)Mobile\b/i,p=/Android/i,b=/\bAndroid(?:.+)SD4930UR\b/i,l=/\bAndroid(?:.+)(?:KF[A-Z]{2,4})\b/i,f=/Windows Phone/i,s=/\bWindows(?:.+)ARM\b/i,u=/BlackBerry/i,c=/BB10/i,h=/Opera Mini/i,v=/\b(CriOS|Chrome)(?:.+)Mobile/i,w=/Mobile(?:.+)Firefox\b/i;function m(e,i){return e.test(i)}function i(e){var i=e||("undefined"!=typeof navigator?navigator.userAgent:""),o=i.split("[FBAN");void 0!==o[1]&&(i=o[0]),void 0!==(o=i.split("Twitter"))[1]&&(i=o[0]);var d={apple:{phone:m(n,i)&&!m(f,i),ipod:m(t,i),tablet:!m(n,i)&&m(r,i)&&!m(f,i),device:(m(n,i)||m(t,i)||m(r,i))&&!m(f,i)},amazon:{phone:m(b,i),tablet:!m(b,i)&&m(l,i),device:m(b,i)||m(l,i)},android:{phone:!m(f,i)&&m(b,i)||!m(f,i)&&m(a,i),tablet:!m(f,i)&&!m(b,i)&&!m(a,i)&&(m(l,i)||m(p,i)),device:!m(f,i)&&(m(b,i)||m(l,i)||m(a,i)||m(p,i))||m(/\bokhttp\b/i,i)},windows:{phone:m(f,i),tablet:m(s,i),device:m(f,i)||m(s,i)},other:{blackberry:m(u,i),blackberry10:m(c,i),opera:m(h,i),firefox:m(w,i),chrome:m(v,i),device:m(u,i)||m(c,i)||m(h,i)||m(w,i)||m(v,i)}};return d.any=d.apple.device||d.android.device||d.windows.device||d.other.device,d.phone=d.apple.phone||d.android.phone||d.windows.phone,d.tablet=d.apple.tablet||d.android.tablet||d.windows.tablet,d}"undefined"!=typeof module&&module.exports&&"undefined"==typeof window?module.exports=i:"undefined"!=typeof module&&module.exports&&"undefined"!=typeof window?(module.exports=i(),module.exports.isMobile=i):"function"==typeof define&&define.amd?define([],e.isMobile=i()):e.isMobile=i()}(this);
-},{}],49:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -41016,7 +40724,7 @@ MiniSignal.MiniSignalBinding = MiniSignalBinding;
 exports['default'] = MiniSignal;
 module.exports = exports['default'];
 
-},{}],50:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -41108,7 +40816,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],51:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 'use strict'
 
 module.exports = function parseURI (str, opts) {
@@ -41140,7 +40848,7 @@ module.exports = function parseURI (str, opts) {
   return uri
 }
 
-},{}],52:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 /*!
  * pixi.js - v5.1.5
  * Compiled Tue, 24 Sep 2019 04:07:05 UTC
@@ -42574,7 +42282,7 @@ exports.filters = filters;
 exports.useDeprecated = useDeprecated;
 
 
-},{"@pixi/accessibility":11,"@pixi/app":12,"@pixi/constants":13,"@pixi/core":14,"@pixi/display":15,"@pixi/extract":16,"@pixi/filter-alpha":17,"@pixi/filter-blur":18,"@pixi/filter-color-matrix":19,"@pixi/filter-displacement":20,"@pixi/filter-fxaa":21,"@pixi/filter-noise":22,"@pixi/graphics":23,"@pixi/interaction":24,"@pixi/loaders":25,"@pixi/math":26,"@pixi/mesh":28,"@pixi/mesh-extras":27,"@pixi/mixin-cache-as-bitmap":29,"@pixi/mixin-get-child-by-name":30,"@pixi/mixin-get-global-position":31,"@pixi/particles":32,"@pixi/polyfill":33,"@pixi/prepare":34,"@pixi/runner":35,"@pixi/settings":36,"@pixi/sprite":39,"@pixi/sprite-animated":37,"@pixi/sprite-tiling":38,"@pixi/spritesheet":40,"@pixi/text":42,"@pixi/text-bitmap":41,"@pixi/ticker":43,"@pixi/utils":44}],53:[function(require,module,exports){
+},{"@pixi/accessibility":10,"@pixi/app":11,"@pixi/constants":12,"@pixi/core":13,"@pixi/display":14,"@pixi/extract":15,"@pixi/filter-alpha":16,"@pixi/filter-blur":17,"@pixi/filter-color-matrix":18,"@pixi/filter-displacement":19,"@pixi/filter-fxaa":20,"@pixi/filter-noise":21,"@pixi/graphics":22,"@pixi/interaction":23,"@pixi/loaders":24,"@pixi/math":25,"@pixi/mesh":27,"@pixi/mesh-extras":26,"@pixi/mixin-cache-as-bitmap":28,"@pixi/mixin-get-child-by-name":29,"@pixi/mixin-get-global-position":30,"@pixi/particles":31,"@pixi/polyfill":32,"@pixi/prepare":33,"@pixi/runner":34,"@pixi/settings":35,"@pixi/sprite":38,"@pixi/sprite-animated":36,"@pixi/sprite-tiling":37,"@pixi/spritesheet":39,"@pixi/text":41,"@pixi/text-bitmap":40,"@pixi/ticker":42,"@pixi/utils":43}],52:[function(require,module,exports){
 /*!
  * resource-loader - v3.0.1
  * https://github.com/pixijs/pixi-sound
@@ -44925,7 +44633,299 @@ exports.encodeBinary = encodeBinary;
 exports.middleware = index;
 
 
-},{"mini-signals":49,"parse-uri":51}],54:[function(require,module,exports){
+},{"mini-signals":48,"parse-uri":50}],53:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.latticePatches = void 0;
+var latticePatches = {
+  "3.3.3.3.3.3": {
+    vertexFigure: [3, 3, 3, 3, 3, 3],
+    i1: [0.0],
+    i2: [1.0 / 3.0],
+    polygons: [{
+      n: 3,
+      offset: [],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [0.0],
+      rotation: 1.0 / 3.0
+    }]
+  },
+  "4.4.4.4": {
+    vertexFigure: [4, 4, 4, 4],
+    i1: [0.0],
+    i2: [1.0 / 2.0],
+    polygons: [{
+      n: 4,
+      offset: [],
+      rotation: 0.0
+    }]
+  },
+  "6.6.6": {
+    vertexFigure: [6, 6, 6],
+    i1: [0.0, 1.0 / 3.0],
+    i2: [2.0 / 3.0, 1.0 / 3.0],
+    polygons: [{
+      n: 6,
+      offset: [],
+      rotation: 0.0
+    }]
+  },
+  "3.3.3.3.6a": {
+    vertexFigure: [3, 3, 3, 3, 6],
+    i1: [0.0, 0.0, 1.0 / 3.0],
+    i2: [1.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0],
+    polygons: [{
+      n: 3,
+      offset: [],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [0.0],
+      rotation: 1.0 / 3.0
+    }, {
+      n: 3,
+      offset: [0.0],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [0.0, 0.0],
+      rotation: 1.0 / 3.0
+    }, {
+      n: 3,
+      offset: [0.0, 1.0 / 3.0],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [0.0, 1.0 / 3.0, 0.0],
+      rotation: 1.0 / 3.0
+    }, {
+      n: 3,
+      offset: [0.0, 1.0 / 3.0, 1.0 / 3.0],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [0.0, 1.0 / 3.0, 1.0 / 3.0],
+      rotation: 1.0 / 3.0
+    }, {
+      n: 6,
+      offset: [1.0 / 3.0],
+      rotation: 0.0
+    }]
+  },
+  "3.3.3.3.6b": {
+    vertexFigure: [3, 3, 3, 3, 6],
+    i1: [0.0, -1.0 / 3.0, 0.0],
+    i2: [2.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0],
+    polygons: [{
+      n: 3,
+      offset: [],
+      rotation: 2.0 / 3.0
+    }, {
+      n: 3,
+      offset: [],
+      rotation: 1.0 / 3.0
+    }, {
+      n: 3,
+      offset: [],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [0.0],
+      rotation: 1.0 / 3.0
+    }, {
+      n: 3,
+      offset: [1.0 / 3.0],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [0.0, 1.0 / 3.0],
+      rotation: 1.0 / 3.0
+    }, {
+      n: 3,
+      offset: [1.0 / 3.0, 1.0 / 3.0],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [1.0 / 3.0, 1.0 / 3.0],
+      rotation: 1.0 / 3.0
+    }, {
+      n: 6,
+      offset: [2.0 / 3.0],
+      rotation: 0.0
+    }]
+  },
+  "3.3.3.4.4": {
+    vertexFigure: [3, 3, 3, 4, 4],
+    i1: [0.0],
+    i2: [1.0 / 3.0, 1.0 / 2.0],
+    polygons: [{
+      n: 3,
+      offset: [],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [0.0],
+      rotation: 1.0 / 3.0
+    }, {
+      n: 4,
+      offset: [1.0 / 3.0],
+      rotation: 0.0
+    }]
+  },
+  "3.3.4.3.4": {
+    vertexFigure: [3, 3, 4, 3, 4],
+    i1: [0.0, 1.0 / 6.0],
+    i2: [2.0 / 3.0, 1.0 / 2.0],
+    polygons: [{
+      n: 3,
+      offset: [],
+      rotation: 0.0
+    }, {
+      n: 4,
+      offset: [0.0],
+      rotation: 1.0 / 6.0
+    }, {
+      n: 3,
+      offset: [1.0 / 3.0],
+      rotation: 1.0 / 6.0
+    }, {
+      n: 3,
+      offset: [1.0 / 3.0, 1.0 / 6.0],
+      rotation: 2.0 / 4.0 // This was 1.0 / 4.0
+
+    }, {
+      n: 4,
+      offset: [2.0 / 3.0],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [],
+      rotation: 1.0 / 3.0
+    }]
+  },
+  "3.4.6.4": {
+    vertexFigure: [3, 4, 6, 4],
+    i1: [0.0, 1.0 / 6.0, -1.0 / 6.0],
+    i2: [1.0 / 3.0, 1.0 / 6.0, 1.0 / 2.0],
+    polygons: [{
+      n: 4,
+      offset: [],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [-1.0 / 3.0],
+      rotation: 1.0 / 3.0
+    }, {
+      n: 4,
+      offset: [-1.0 / 3.0],
+      rotation: -1.0 / 6.0
+    }, {
+      n: 3,
+      offset: [-1.0 / 3.0, -1.0 / 6.0],
+      rotation: 0.0
+    }, {
+      n: 4,
+      offset: [-1.0 / 3.0, -1.0 / 6.0, 0.0],
+      rotation: 1.0 / 6.0
+    }, {
+      n: 6,
+      offset: [0.0],
+      rotation: -1.0 / 6.0
+    }]
+  },
+  "3.6.3.6": {
+    vertexFigure: [3, 6, 3, 6],
+    i1: [0.0, 0.0],
+    i2: [1.0 / 3.0, 1.0 / 3.0],
+    polygons: [{
+      n: 3,
+      offset: [],
+      rotation: 0.0
+    }, {
+      n: 6,
+      offset: [0.0],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [0.0, 0.0, 1.0 / 3.0],
+      rotation: 1.0 / 3.0
+    }]
+  },
+  "3.12.12": {
+    vertexFigure: [3, 12, 12],
+    i1: [0.0, -1.0 / 6.0, 0.0, 1.0 / 6.0],
+    i2: [1.0 / 3.0, 1.0 / 2.0, 1.0 / 3.0, 1.0 / 6.0],
+    polygons: [{
+      n: 3,
+      offset: [],
+      rotation: 0.0
+    }, {
+      n: 12,
+      offset: [0.0, -1.0 / 6.0],
+      rotation: 0.0
+    }, {
+      n: 3,
+      offset: [0.0, -1.0 / 6.0, 0.0, 1.0 / 6.0, 1.0 / 3.0, 1.0 / 2.0],
+      rotation: 1.0 / 3.0
+    }]
+  },
+  "4.6.12": {
+    vertexFigure: [4, 6, 12],
+    i1: [0.0, -1.0 / 6.0, 1.0 / 6.0, 1.0 / 2.0, 1.0 / 3.0, 1.0 / 6.0],
+    i2: [1.0 / 6.0, 1.0 / 3.0, 1.0 / 2.0, 2.0 / 3.0, 5.0 / 6.0, 1.0 / 2.0],
+    polygons: [{
+      n: 4,
+      offset: [],
+      rotation: 0.0
+    }, {
+      n: 6,
+      offset: [0.0, -1.0 / 6.0],
+      rotation: 1.0 / 6.0
+    }, {
+      n: 4,
+      offset: [0.0, -1.0 / 6.0, 1.0 / 6.0, 1.0 / 2.0],
+      rotation: 1.0 / 3.0
+    }, {
+      n: 6,
+      offset: [0.0, -1.0 / 6.0, 1.0 / 6.0, 1.0 / 2.0, 1.0 / 3.0],
+      rotation: 1.0 / 6.0
+    }, {
+      n: 4,
+      offset: [1.0 / 2.0, 0.0, 1.0 / 6.0, 1.0 / 3.0, 1.0 / 2.0],
+      rotation: 1.0 / 6.0
+    }, {
+      n: 6,
+      offset: [1.0 / 2.0, 0.0, 1.0 / 6.0, 1.0 / 3.0, 1.0 / 2.0, 2.0 / 3.0],
+      rotation: 1.0 / 6.0
+    }, {
+      n: 12,
+      offset: [1.0 / 2.0],
+      rotation: 0.0
+    }]
+  },
+  "4.8.8": {
+    vertexFigure: [4, 8, 8],
+    i1: [0.0, -1.0 / 4.0, 0.0, 1.0 / 4.0],
+    i2: [0.0, 1.0 / 2.0, 1.0 / 4.0],
+    polygons: [{
+      n: 4,
+      offset: [],
+      rotation: 0.0
+    }, {
+      n: 8,
+      offset: [0.0, -1.0 / 4.0],
+      rotation: 0.0
+    }]
+  }
+};
+exports.latticePatches = latticePatches;
+
+},{}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45668,19 +45668,239 @@ exports.Vector = Vector;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Tile = void 0;
+exports.Tiling = void 0;
 
 var PIXI = _interopRequireWildcard(require("pixi.js"));
 
-var _line = require("./src/line");
+var _point = require("./math/point");
 
-var _matrix = require("./src/matrix");
+var _polygon = require("./math/polygon");
 
-var _point = require("./src/point");
+var _vector = require("./math/vector");
 
-var _polygon = require("./src/polygon");
+var utils = _interopRequireWildcard(require("./math/utils"));
 
-var _vector = require("./src/vector");
+var lattice = _interopRequireWildcard(require("./lattice"));
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; if (obj != null) { var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var scale = 10.0;
+
+var Tiling =
+/*#__PURE__*/
+function () {
+  /*
+   *
+   * Construct a tiling from a valid vertex figure.
+   *
+   * Note that `vertexFigure` should correspond to one of
+   * the 11 known Archimedean tilings above
+   *
+   */
+  function Tiling(patch) {
+    var rows = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2;
+    var columns = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 3;
+
+    _classCallCheck(this, Tiling);
+
+    // The number of times the lattice patch is repeated, vertically
+    this._rows = rows; // The number of times the lattice patch is repeated, horizontally
+
+    this._columns = columns; // One repeatable patch of the tiling
+
+    this._latticePatch = lattice.latticePatches[patch]; // Get the vertex figure that corresponds to this tiling
+
+    this._vertexFigure = this._latticePatch.vertexFigure;
+    this.assemble();
+  }
+
+  _createClass(Tiling, [{
+    key: "assemble",
+    value: function assemble() {
+      var _this = this;
+
+      var sum = 0.0;
+      this._vertexFigurePolygons = this._vertexFigure.map(function (vertex, index) {
+        var base = _polygon.Polygon.withSideLength(1.0, vertex); // First translate so that one of the corners of this polygon is coincident
+        // with the origin then rotate around the origin
+
+
+        var circumradius = 0.5 / Math.sin(Math.PI / vertex);
+        var interiorAngle = (vertex - 2) * Math.PI / vertex;
+        base.move(new _vector.Vector(-circumradius, 0.0, 0.0));
+        base.rotate(sum + interiorAngle * 0.5);
+        sum += interiorAngle;
+        return base;
+      });
+
+      this._vertexFigurePolygons.forEach(function (polygon) {
+        return polygon.scale(scale);
+      }); // Compute lattice vectors, which tell us how to translate copies of the
+      // lattice patch across the plane in order to build a complete tiling
+
+
+      this._latticeVector1 = new _vector.Vector(0.0, 0.0, 0.0);
+      this._latticeVector2 = new _vector.Vector(0.0, 0.0, 0.0);
+
+      this._latticePatch.i1.forEach(function (entry) {
+        _this._latticeVector1.x += Math.cos(entry * Math.PI);
+        _this._latticeVector1.y += Math.sin(entry * Math.PI);
+      });
+
+      this._latticePatch.i2.forEach(function (entry) {
+        _this._latticeVector2.x += Math.cos(entry * Math.PI);
+        _this._latticeVector2.y += Math.sin(entry * Math.PI);
+      }); // Compute polygons that form a single lattice patch
+
+
+      this._latticePolygons = this._latticePatch.polygons.map(function (polygon, index) {
+        var base = _polygon.Polygon.withSideLength(1.0, polygon.n); // Calculate the circumradius and interior angle of this polygon
+
+
+        var circumradius = 0.5 / Math.sin(Math.PI / polygon.n);
+        var interiorAngle = (polygon.n - 2) * Math.PI / polygon.n; // Translate the polygon so that its first vertex coincides with the origin
+
+        base.move(new _vector.Vector(-circumradius, 0.0, 0.0));
+        base.rotate(interiorAngle * 0.5);
+        base.rotate(polygon.rotation * Math.PI);
+        polygon.offset.forEach(function (entry) {
+          base.move(new _vector.Vector(-Math.cos(entry * Math.PI), -Math.sin(entry * Math.PI), 0.0));
+        });
+        base.scale(scale);
+        return base;
+      }); // Generate the full tiling (or at least, a couple rows and columns)
+
+      this._polygons = [];
+
+      for (var i = 0; i < this._rows; i++) {
+        var _loop = function _loop(j) {
+          var iCentered = i - _this._rows / 2;
+          var jCentered = j - _this._columns / 2;
+
+          var offset = _this._latticeVector1.multiplyScalar(iCentered).add(_this._latticeVector2.multiplyScalar(jCentered));
+
+          offset = offset.multiplyScalar(-scale);
+
+          _this._latticePolygons.forEach(function (polygon, index) {
+            var tilePolygon = polygon.copy();
+            tilePolygon.move(new _vector.Vector(offset.x, offset.y - 6, 0.0));
+
+            _this._polygons.push(tilePolygon);
+          });
+        };
+
+        for (var j = 0; j < this._columns; j++) {
+          _loop(j);
+        }
+      }
+    }
+  }, {
+    key: "render",
+    value: function render(x, y) {
+      var _this2 = this;
+
+      var background = 0xd1cac9;
+      var orange = 0xfe8102;
+      this._graphics = new PIXI.Graphics();
+
+      this._graphics.lineStyle(0.25, 0xffffff);
+
+      var showVertexFigure = true;
+
+      if (showVertexFigure) {
+        this._vertexFigurePolygons.forEach(function (polygon, index) {
+          var flatPoints = polygon.points.map(function (point) {
+            // Move the vertex figure below the tiling - pretty arbitrary
+            var yOffset = 120.0;
+            return [point.x, point.y + yOffset];
+          }).flat();
+
+          _this2._graphics.beginFill(background);
+
+          _this2._graphics.drawPolygon(flatPoints);
+
+          _this2._graphics.endFill();
+        });
+      } // Draw the tiling
+
+
+      this._polygons.forEach(function (polygon, index) {
+        var flatPoints = polygon.points.map(function (point) {
+          return [point.x, point.y];
+        }).flat();
+
+        _this2._graphics.beginFill(background);
+
+        _this2._graphics.drawPolygon(flatPoints);
+
+        _this2._graphics.endFill();
+      }); // Position this graphics container
+
+
+      this._graphics.x = x;
+      this._graphics.y = y;
+      window.app.stage.addChild(this._graphics);
+    }
+  }, {
+    key: "createPrimalGraph",
+    value: function createPrimalGraph() {}
+  }, {
+    key: "createDualGraph",
+    value: function createDualGraph() {}
+  }, {
+    key: "vertexFigurePolygons",
+    get: function get() {
+      return this._vertexFigurePolygons;
+    }
+  }, {
+    key: "latticePolygons",
+    get: function get() {
+      return this._latticePolygons;
+    }
+  }, {
+    key: "polygons",
+    get: function get() {
+      return this._polygons;
+    }
+  }, {
+    key: "latticeVectors",
+    get: function get() {
+      return [this._latticeVector1, this._latticeVector2];
+    }
+  }]);
+
+  return Tiling;
+}();
+
+exports.Tiling = Tiling;
+
+},{"./lattice":53,"./math/point":56,"./math/polygon":57,"./math/utils":58,"./math/vector":59,"pixi.js":51}],61:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.TwistTile = void 0;
+
+var PIXI = _interopRequireWildcard(require("pixi.js"));
+
+var _line = require("./math/line");
+
+var _matrix = require("./math/matrix");
+
+var _point = require("./math/point");
+
+var _polygon = require("./math/polygon");
+
+var _vector = require("./math/vector");
 
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
 
@@ -45705,13 +45925,13 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
  * A class representing a single, centered twist tile.
  *
  */
-var Tile =
+var TwistTile =
 /*#__PURE__*/
 function () {
-  function Tile(polygon) {
+  function TwistTile(polygon) {
     var reversed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-    _classCallCheck(this, Tile);
+    _classCallCheck(this, TwistTile);
 
     // The segment width ratio along each of the tile polygon's edges
     this._w = 0.25; // The tilt angle of the twist
@@ -45730,7 +45950,7 @@ function () {
     this.render();
   }
 
-  _createClass(Tile, [{
+  _createClass(TwistTile, [{
     key: "buildVertices",
     value: function buildVertices() {
       var _this = this;
@@ -46063,226 +46283,9 @@ function () {
     }
   }]);
 
-  return Tile;
+  return TwistTile;
 }();
 
-exports.Tile = Tile;
+exports.TwistTile = TwistTile;
 
-},{"./src/line":54,"./src/matrix":55,"./src/point":56,"./src/polygon":57,"./src/vector":59,"pixi.js":52}],61:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Tiling = void 0;
-
-var PIXI = _interopRequireWildcard(require("pixi.js"));
-
-var _point = require("./src/point");
-
-var _polygon = require("./src/polygon");
-
-var _vector = require("./src/vector");
-
-var utils = _interopRequireWildcard(require("./src/utils"));
-
-var lattice = _interopRequireWildcard(require("./lattice"));
-
-function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; if (obj != null) { var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-var scale = 10.0;
-
-var Tiling =
-/*#__PURE__*/
-function () {
-  /*
-   *
-   * Construct a tiling from a valid vertex figure.
-   *
-   * Note that `vertexFigure` should correspond to one of
-   * the 11 known Archimedean tilings above
-   *
-   */
-  function Tiling(patch) {
-    var rows = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2;
-    var columns = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 3;
-
-    _classCallCheck(this, Tiling);
-
-    this._rows = rows;
-    this._columns = columns; // One tile-able patch of the tiling
-
-    this._latticePatch = lattice.latticePatches[patch]; // Get the vertex figure that corresponds to this tiling
-
-    this._vertexFigure = this._latticePatch.vertexFigure;
-    this.assemble();
-  }
-
-  _createClass(Tiling, [{
-    key: "assemble",
-    value: function assemble() {
-      var _this = this;
-
-      var sum = 0.0;
-      this._vertexFigurePolygons = this._vertexFigure.map(function (vertex, index) {
-        var base = _polygon.Polygon.withSideLength(1.0, vertex); // First translate so that one of the corners of this polygon is coincident 
-        // with the origin then rotate around the origin
-
-
-        var circumradius = 0.5 / Math.sin(Math.PI / vertex);
-        var interiorAngle = (vertex - 2) * Math.PI / vertex;
-        base.move(new _vector.Vector(-circumradius, 0.0, 0.0));
-        base.rotate(sum + interiorAngle * 0.5);
-        sum += interiorAngle;
-        return base;
-      });
-
-      this._vertexFigurePolygons.forEach(function (polygon) {
-        return polygon.scale(scale);
-      }); // Compute lattice vectors, which tell us how to translate copies of the 
-      // lattice patch across the plane in order to build a complete tiling
-
-
-      this._latticeVector1 = new _vector.Vector(0.0, 0.0, 0.0);
-      this._latticeVector2 = new _vector.Vector(0.0, 0.0, 0.0);
-
-      this._latticePatch.i1.forEach(function (entry) {
-        _this._latticeVector1.x += Math.cos(entry * Math.PI);
-        _this._latticeVector1.y += Math.sin(entry * Math.PI);
-      });
-
-      this._latticePatch.i2.forEach(function (entry) {
-        _this._latticeVector2.x += Math.cos(entry * Math.PI);
-        _this._latticeVector2.y += Math.sin(entry * Math.PI);
-      }); // Compute polygons that form a single lattice patch
-
-
-      this._latticePolygons = this._latticePatch.polygons.map(function (polygon, index) {
-        var base = _polygon.Polygon.withSideLength(1.0, polygon.n); // Calculate the circumradius and interior angle of this polygon
-
-
-        var circumradius = 0.5 / Math.sin(Math.PI / polygon.n);
-        var interiorAngle = (polygon.n - 2) * Math.PI / polygon.n; // Translate the polygon so that its first vertex coincides with the origin
-
-        base.move(new _vector.Vector(-circumradius, 0.0, 0.0));
-        base.rotate(interiorAngle * 0.5);
-        base.rotate(polygon.rotation * Math.PI);
-        polygon.offset.forEach(function (entry) {
-          base.move(new _vector.Vector(-Math.cos(entry * Math.PI), -Math.sin(entry * Math.PI), 0.0));
-        });
-        base.scale(scale);
-        return base;
-      }); // Generate the full tiling (or at least, a couple rows and columns)
-
-      this._polygons = [];
-
-      for (var i = 0; i < this._rows; i++) {
-        var _loop = function _loop(j) {
-          var iCentered = i - _this._rows / 2;
-          var jCentered = j - _this._columns / 2;
-
-          var offset = _this._latticeVector1.multiplyScalar(iCentered).add(_this._latticeVector2.multiplyScalar(jCentered));
-
-          offset = offset.multiplyScalar(-scale);
-
-          _this._latticePolygons.forEach(function (polygon, index) {
-            var tilePolygon = polygon.copy();
-            tilePolygon.move(new _vector.Vector(offset.x, offset.y - 6, 0.0));
-
-            _this._polygons.push(tilePolygon);
-          });
-        };
-
-        for (var j = 0; j < this._columns; j++) {
-          _loop(j);
-        }
-      }
-    }
-  }, {
-    key: "render",
-    value: function render(x, y) {
-      var _this2 = this;
-
-      var background = 0xd1cac9;
-      var orange = 0xfe8102;
-      this._graphics = new PIXI.Graphics();
-
-      this._graphics.lineStyle(0.25, 0xffffff);
-
-      var showVertexFigure = true;
-
-      if (showVertexFigure) {
-        this._vertexFigurePolygons.forEach(function (polygon, index) {
-          var flatPoints = polygon.points.map(function (point) {
-            var yOffset = 120.0;
-            return [point.x, point.y + yOffset];
-          }).flat();
-
-          _this2._graphics.beginFill(background);
-
-          _this2._graphics.drawPolygon(flatPoints);
-
-          _this2._graphics.endFill();
-        });
-      } // Draw the tiling
-
-
-      this._polygons.forEach(function (polygon, index) {
-        var flatPoints = polygon.points.map(function (point) {
-          return [point.x, point.y];
-        }).flat();
-
-        _this2._graphics.beginFill(background);
-
-        _this2._graphics.drawPolygon(flatPoints);
-
-        _this2._graphics.endFill();
-      }); // Position this graphics container
-
-
-      this._graphics.x = x;
-      this._graphics.y = y;
-      window.app.stage.addChild(this._graphics);
-    }
-  }, {
-    key: "createPrimalGraph",
-    value: function createPrimalGraph() {}
-  }, {
-    key: "createDualGraph",
-    value: function createDualGraph() {}
-  }, {
-    key: "vertexFigurePolygons",
-    get: function get() {
-      return this._vertexFigurePolygons;
-    }
-  }, {
-    key: "latticePolygons",
-    get: function get() {
-      return this._latticePolygons;
-    }
-  }, {
-    key: "polygons",
-    get: function get() {
-      return this._polygons;
-    }
-  }, {
-    key: "latticeVectors",
-    get: function get() {
-      return [this._latticeVector1, this._latticeVector2];
-    }
-  }]);
-
-  return Tiling;
-}();
-
-exports.Tiling = Tiling;
-
-},{"./lattice":10,"./src/point":56,"./src/polygon":57,"./src/utils":58,"./src/vector":59,"pixi.js":52}]},{},[9]);
+},{"./math/line":54,"./math/matrix":55,"./math/point":56,"./math/polygon":57,"./math/vector":59,"pixi.js":51}]},{},[9]);
