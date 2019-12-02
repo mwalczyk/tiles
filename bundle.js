@@ -1766,8 +1766,13 @@ var app = new PIXI.Application({
   antialias: true,
   resolution: 2
 });
+var divRender = document.getElementById("render");
 app.renderer.backgroundColor = 0xe6e0df;
-document.body.appendChild(app.view);
+app.view.width = divRender.clientWidth;
+document.body.appendChild(app.view); //divRender.appendChild(app.view);
+//app.renderer.width = divRender.clientWidth;
+//document.documentElement.clientWidth
+
 window.app = app;
 var inputW = document.getElementById("input_w");
 var inputTau = document.getElementById("input_tau");

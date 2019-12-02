@@ -2,6 +2,11 @@ canvas {
 	margin: 10px;
 }
 
+#render {
+  width: 100%;
+  height: auto;
+}
+
 html,
 body {
 	margin: 0;
